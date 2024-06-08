@@ -187,7 +187,7 @@ class ChatApp(tk.Tk):
                 response = communicate_with_DeepInfra(user_input, "meta-llama/Llama-2-70b-chat-hf")
             else:
                 response = "Пожалуйста, выберите модель"
-            if self.history_checkbox:
+            if self.history_var.get():
                 self.write_history(user_input, response)
             self.chat_history.configure(state="normal")
             self.chat_history.insert("end", f"Вы: {user_input}\n")
