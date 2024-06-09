@@ -220,11 +220,10 @@ class ChatApp(tk.Tk):
 
     def write_history(self, user_input, responce):
         try:
-            now = datetime.datetime.now()
+            now = datetime.now()
             text = f"Дата и время: {now.strftime('%d.%m.%Y %H:%M:%S')}\nЗапрос пользователя: {user_input}\nОтвет ИИ: {responce}\n\n{100*"_"}"
-            with open("history.txt", "a") as f:
+            with open("llm_history.txt", "a") as f:
                 f.write(text)
-            messagebox.showinfo("Файл history.txt создан")
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
@@ -249,6 +248,7 @@ class ChatApp(tk.Tk):
 
                 if self.history_var.get():
                     self.write_history(user_input, response)
+
                 self.chat_history.configure(state="disabled")
                 self.input_entry.delete("1.0", "end")  # Очистка поля ввода
         except Exception as e:
