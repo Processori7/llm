@@ -133,10 +133,7 @@ model_functions = {
                 "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,
                                                                                             "mistralai/Mixtral-8x7B-Instruct-v0.1"),
                 "dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,
-                                                                                          "cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
-                "lzlv_70b_fp16_hf": lambda user_input: communicate_with_DeepInfra(user_input,
-                                                                                  "lizpreciatior/lzlv_70b_fp16_hf"),
-                "openchat_3.5": lambda user_input: communicate_with_DeepInfra}
+                                                                                          "cognitivecomputations/dolphin-2.6-mixtral-8x7b")}
 
 class ChatApp(tk.Tk):
     def __init__(self):
@@ -244,7 +241,7 @@ class ChatApp(tk.Tk):
                 else:
                     response = "Пожалуйста, выберите модель"
 
-                self.chat_history.insert(tk.END, f"Ответ ИИ: {response}\n", "response")
+                self.chat_history.insert(tk.END, f"Ответ от {model}: {response}\n", "response")
 
                 if self.history_var.get():
                     self.write_history(user_input, response)
