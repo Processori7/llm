@@ -144,8 +144,21 @@ class ChatApp(tk.Tk):
             self.configure(bg="black")
 
             # Создание виджетов
-            self.chat_history = tk.Text(self, bg="black", fg="green", state="disabled", font=("Consolas", 14))
+            self.chat_history = tk.Text(self, bg="black", fg="green", font=("Consolas", 14))
             self.chat_history.pack(fill="both", expand=True, padx=10, pady=10)
+            self.chat_history.configure(state="disabled")
+            # Настройка стилей виджета chat_history
+            self.chat_history.tag_configure("response", foreground="yellow")
+            self.chat_history.tag_configure("user_input", foreground="red")
+
+            # Добавление обработчика для Ctrl + C
+            self.chat_history.bind("<Control-c>", self.copy_text)
+
+
+            # Добавление контекстного меню
+            self.chat_history.bind("<Button-3>", self.show_context_menu)
+            self.context_menu = tk.Menu(self, tearoff=0)
+            self.context_menu.add_command(label="Копировать", command=self.copy_text)
 
             self.input_frame = tk.Frame(self, bg="black")
             self.input_frame.pack(fill="x", padx=10, pady=10)
@@ -158,12 +171,19 @@ class ChatApp(tk.Tk):
             self.model_combobox.pack(side="left", padx=5)
             self.model_combobox.current(3)
 
-            self.input_entry = tk.Text(self.input_frame, bg="black", fg="green", insertbackground="green", font=("Consolas", 14), height=10, width=50, wrap="word")
+            self.input_entry = tk.Text(self.input_frame, bg="black", fg="green", insertbackground="green", font=("Consolas", 14), height=10, width=50, wrap="word", undo=True, autoseparators=True, maxundo=-1)
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
+            self.input_entry.configure(state="normal")
             self.input_entry.bind("<Shift-Return>", self.insert_newline)
             self.input_entry.bind("<Return>", self.send_message)
             self.input_entry.bind("<KeyRelease-Return>", self.check_input)
+            self.input_entry.bind("<Control-z>", self.undo_input)
+            self.input_entry.bind("<Control-c>", self.copy_text)
+            self.input_entry.bind("<Control-v>", self.paste_text)
 
+            # Настройка стилей виджета chat_history
+            self.chat_history.tag_configure("response", foreground="yellow")
+            self.chat_history.tag_configure("user_input", foreground="orange")
             # Кнопки
             self.send_button = tk.Button(self.input_frame, text="Отправить", bg="black", fg="green", font=("Consolas", 14),
                                          command=self.send_message, borderwidth=0)
@@ -199,6 +219,19 @@ class ChatApp(tk.Tk):
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
+    def undo_input(self, event=None):
+        """
+        Отменяет последнее действие ввода в поле ввода.
+        """
+        try:
+            self.input_entry.edit_undo()
+        except Exception as e:
+            messagebox.showerror("Возникла ошибка", e)
+    def show_context_menu(self, event):
+        try:
+            self.context_menu.post(event.x_root, event.y_root)
+        except Exception as e:
+            messagebox.showerror("Возникла ошибка", e)
     def insert_newline(self, event):
         try:
             self.input_entry.insert("insert", "\n")
@@ -228,36 +261,59 @@ class ChatApp(tk.Tk):
         try:
             # Добавление текста с использованием стилей
             self.chat_history.configure(state="normal")
-            # Настройка стилей виджета chat_history
-            self.chat_history.tag_configure("response", foreground="yellow")
-            self.chat_history.tag_configure("user", foreground="cyan", font=("Consolas", 14))
             user_input = self.input_entry.get("1.0", "end-1c").strip()
             if user_input:
                 model = self.model_var.get()
 
                 if model in model_functions:
-                    self.chat_history.insert(tk.END, f"Вы: {user_input}\n", "user")
+                    self.chat_history.insert(tk.END, f"Вы: {user_input}\n","user_input")
                     response = model_functions[model](user_input)
                 else:
                     response = "Пожалуйста, выберите модель"
 
-                self.chat_history.insert(tk.END, f"Ответ от {model}: {response}\n", "response")
+                self.chat_history.insert(tk.END, f"Ответ от {model}: {response}\n","response")
 
                 if self.history_var.get():
                     self.write_history(user_input, response)
 
-                self.chat_history.configure(state="disabled")
                 self.input_entry.delete("1.0", "end")  # Очистка поля ввода
+                self.chat_history.configure(state="disabled")
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
     def clear_chat(self):
         try:
-            self.chat_history.configure(state="normal")
             self.chat_history.delete("1.0", "end")
-            self.chat_history.configure(state="disabled")
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def paste_text(self, event=None):
+        try:
+            # Получаем текст из буфера обмена
+            clipboard_text = self.clipboard_get()
+
+            # Вставляем текст в поле ввода
+            self.input_entry.insert("insert", clipboard_text)
+
+            # Возвращаем "break", чтобы предотвратить дальнейшее распространение события
+            return "break"
+        except tk.TclError:
+            # Если в буфере обмена нет текста, ничего не делаем
+            pass
+        except Exception as e:
+            messagebox.showerror("Возникла ошибка", e)
+    def copy_text(self, event=None):
+        try:
+            selected_text = self.chat_history.get("sel.first", "sel.last")
+            self.clipboard_clear()
+            self.clipboard_append(selected_text)
+            return "break"
+        except:
+            selected_text = self.input_entry.get("sel.first", "sel.last")
+            self.clipboard_clear()
+            self.clipboard_append(selected_text)
+            return "break"
+
 
 if __name__ == "__main__":
     app = ChatApp()
