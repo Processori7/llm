@@ -1,3 +1,4 @@
+
 from ai4free import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra
 from freeGPT import Client
 import tkinter as tk
@@ -185,7 +186,7 @@ class ChatApp(tk.Tk):
 
             # Горячие клавиши
             keyboard.add_hotkey("shift+enter", self.insert_newline)
-            keyboard.add_hotkey("enter", self.send_message)
+            self.input_entry.bind("<Return>", self.send_message)
             keyboard.add_hotkey("ctrl+z", self.undo_input)
             keyboard.add_hotkey("ctrl+c", self.copy_text)
             keyboard.add_hotkey("ctrl+v", self.paste_text)
