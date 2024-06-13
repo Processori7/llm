@@ -185,7 +185,7 @@ class ChatApp(tk.Tk):
             self.input_entry.configure(state="normal")
 
             # Горячие клавиши
-            keyboard.add_hotkey("shift+enter", self.insert_newline)
+            self.input_entry.bind("<Shift-Return>", self.insert_newline)
             self.input_entry.bind("<Return>", self.send_message)
             keyboard.add_hotkey("ctrl+z", self.undo_input)
             keyboard.add_hotkey("ctrl+c", self.copy_text)
