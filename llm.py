@@ -5,6 +5,7 @@ from tkinter import ttk
 import datetime
 from datetime import datetime
 from tkinter import messagebox
+import keyboard
 
 
 prompt = """###INSTRUCTIONS###
@@ -143,16 +144,23 @@ class ChatApp(tk.Tk):
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
             self.configure(bg="black")
 
-            # Создание виджетов
-            self.chat_history = tk.Text(self, bg="black", fg="green", font=("Consolas", 14))
-            self.chat_history.pack(fill="both", expand=True, padx=10, pady=10)
+            # Создание виджета chat_history с прокруткой
+            self.chat_history_frame = tk.Frame(self, bg="black")
+            self.chat_history_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            self.chat_history_scrollbar = tk.Scrollbar(self.chat_history_frame)
+            self.chat_history_scrollbar.pack(side="right", fill="y")
+
+            self.chat_history = tk.Text(self.chat_history_frame, bg="black", fg="green", font=("Consolas", 14),
+                                        yscrollcommand=self.chat_history_scrollbar.set)
+            self.chat_history.pack(fill="both", expand=True)
+
+            self.chat_history_scrollbar.config(command=self.chat_history.yview)
             self.chat_history.configure(state="disabled")
+
             # Настройка стилей виджета chat_history
             self.chat_history.tag_configure("response", foreground="yellow")
             self.chat_history.tag_configure("user_input", foreground="red")
-
-            # Добавление обработчика для Ctrl + C
-            self.chat_history.bind("<Control-c>", self.copy_text)
 
 
             # Добавление контекстного меню
@@ -174,12 +182,14 @@ class ChatApp(tk.Tk):
             self.input_entry = tk.Text(self.input_frame, bg="black", fg="green", insertbackground="green", font=("Consolas", 14), height=10, width=50, wrap="word", undo=True, autoseparators=True, maxundo=-1)
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
             self.input_entry.configure(state="normal")
-            self.input_entry.bind("<Shift-Return>", self.insert_newline)
-            self.input_entry.bind("<Return>", self.send_message)
-            self.input_entry.bind("<KeyRelease-Return>", self.check_input)
-            self.input_entry.bind("<Control-z>", self.undo_input)
-            self.input_entry.bind("<Control-c>", self.copy_text)
-            self.input_entry.bind("<Control-v>", self.paste_text)
+
+            # Горячие клавиши
+            keyboard.add_hotkey("shift+enter", self.insert_newline)
+            keyboard.add_hotkey("enter", self.send_message)
+            keyboard.add_hotkey("ctrl+z", self.undo_input)
+            keyboard.add_hotkey("ctrl+c", self.copy_text)
+            keyboard.add_hotkey("ctrl+v", self.paste_text)
+            keyboard.add_hotkey("ctrl+a", self.select_all)
 
             # Настройка стилей виджета chat_history
             self.chat_history.tag_configure("response", foreground="yellow")
@@ -215,7 +225,6 @@ class ChatApp(tk.Tk):
             )
             self.history_checkbox.pack(side="top", padx=5, pady=5)
 
-            self.input_entry.bind("<Return>", self.send_message)
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
@@ -226,7 +235,36 @@ class ChatApp(tk.Tk):
         try:
             self.input_entry.edit_undo()
         except Exception as e:
+            pass
+
+    def on_key_press(self, event):
+        if event.keysym == "a" and event.state & 0x4:  # CTRL + a
+            try:
+                if self.chat_history.get("1.0", "end-1c"):
+                    self.chat_history.tag_add("sel", "1.0", "end-1c")
+                    return "break"
+            except Exception as e:
+                pass
+            try:
+                self.input_entry.tag_add("sel", "1.0", "end-1c")
+                return "break"
+            except Exception as e:
+                pass
+        # Обработка других горячих клавиш
+        elif event.keysym == "z" and event.state & 0x4:  # CTRL + z
+            self.undo_input()
+            return "break"
+    def select_all(self, event):
+        try:
+            if self.chat_history.get("1.0", "end-1c"):
+                # Выделяем весь текст в виджете chat_history
+                self.chat_history.tag_add("sel", "1.0", "end-1c")
+            else:
+                self.input_entry.tag_add("sel", "1.0", "end-1c")
+            return "break"
+        except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
     def show_context_menu(self, event):
         try:
             self.context_menu.post(event.x_root, event.y_root)
@@ -302,17 +340,21 @@ class ChatApp(tk.Tk):
             pass
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
     def copy_text(self, event=None):
         try:
-            selected_text = self.chat_history.get("sel.first", "sel.last")
-            self.clipboard_clear()
-            self.clipboard_append(selected_text)
+            if self.chat_history.get("1.0", "end-1c"):
+                selected_text = self.chat_history.get("sel.first", "sel.last")
+                self.clipboard_clear()
+                self.clipboard_append(selected_text)
+            else:
+                selected_text = self.input_entry.get("sel.first", "sel.last")
+                self.clipboard_clear()
+                self.clipboard_append(selected_text)
             return "break"
-        except:
-            selected_text = self.input_entry.get("sel.first", "sel.last")
-            self.clipboard_clear()
-            self.clipboard_append(selected_text)
-            return "break"
+        except Exception as e:
+            messagebox.showerror("Возникла ошибка", e)
+
 
 
 if __name__ == "__main__":
