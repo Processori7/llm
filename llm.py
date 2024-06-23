@@ -120,6 +120,8 @@ model_functions = {
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "claude-3-haiku": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
+                "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
+                "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
                 "Llama-70b": lambda user_input: communicate_with_DeepInfra(user_input),
                 "mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,
