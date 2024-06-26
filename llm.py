@@ -1,3 +1,4 @@
+import os
 
 from ai4free import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra
 from freeGPT import Client
@@ -7,6 +8,8 @@ import datetime
 from datetime import datetime
 from tkinter import messagebox
 import keyboard
+from PIL import Image
+from io import BytesIO
 
 
 prompt = """###INSTRUCTIONS###
@@ -137,7 +140,26 @@ model_functions = {
                 "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,
                                                                                             "mistralai/Mixtral-8x7B-Instruct-v0.1"),
                 "dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,
-                                                                                          "cognitivecomputations/dolphin-2.6-mixtral-8x7b")}
+                                                                                          "cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
+                "prodia_img":lambda user_input: gen_img(user_input, "prodia"),
+                "pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
+
+def gen_img(user_input, model):
+    try:
+        resp = Client.create_generation(model, user_input)
+
+        img_folder = 'img'
+        if not os.path.exists(img_folder):
+            os.makedirs(img_folder)
+
+        image_path = os.path.join(img_folder, f'{user_input}_{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}.png')
+        with Image.open(BytesIO(resp)) as img:
+            img.save(image_path)
+
+        return f"Картинка сохранена в: {image_path}"
+
+    except Exception as e:
+       return f"Ошибка при генерации картинки: {e}"
 
 class ChatApp(tk.Tk):
     def __init__(self):
