@@ -73,8 +73,8 @@ def communicate_with_BlackboxAI(user_input):
             act=None,
             model=None
         )
-        responce = ai.chat(user_input)
-        return responce
+        response = ai.chat(user_input)
+        return response
     except Exception as e:
         return f"Ошибка при общении с BLACKBOXAI: {e}"
 
@@ -110,8 +110,8 @@ def communicate_with_DeepInfra(user_input, model):
             system_prompt=prompt
         )
         message = ai.ask(user_input)
-        responce = ai.get_message(message)
-        return responce
+        respose = ai.get_message(message)
+        return respose
     except Exception as e:
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
@@ -142,6 +142,7 @@ model_functions = {
 class ChatApp(tk.Tk):
     def __init__(self):
         try:
+
             super().__init__()
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
@@ -197,6 +198,7 @@ class ChatApp(tk.Tk):
             # Настройка стилей виджета chat_history
             self.chat_history.tag_configure("response", foreground="yellow")
             self.chat_history.tag_configure("user_input", foreground="orange")
+            self.chat_history.tag_configure("system_line", foreground="cyan")
             # Кнопки
             self.send_button = tk.Button(self.input_frame, text="Отправить", bg="black", fg="green", font=("Consolas", 14),
                                          command=self.send_message, borderwidth=0)
@@ -281,6 +283,13 @@ class ChatApp(tk.Tk):
             return "break"
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+    def remove_newline(self, event):
+        try:
+            text = self.input_entry.get("1.0", "end-1c")
+            self.input_entry.delete("1.0", "end")
+            self.input_entry.insert("1.0", text.rstrip("\n"))
+        except Exception as e:
+            messagebox.showerror("Возникла ошибка", e)
 
     def check_input(self, event):
         try:
@@ -289,10 +298,10 @@ class ChatApp(tk.Tk):
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
-    def write_history(self, user_input, responce):
+    def write_history(self, user_input, response):
         try:
             now = datetime.now()
-            text = f"Дата и время: {now.strftime('%d.%m.%Y %H:%M:%S')}\nЗапрос пользователя: {user_input}\nОтвет ИИ: {responce}\n\n{100*"_"}"
+            text = f"Дата и время: {now.strftime('%d.%m.%Y %H:%M:%S')}\nЗапрос пользователя: {user_input}\nОтвет ИИ: {response}\n\n{100*"="}"
             with open("llm_history.txt", "a") as f:
                 f.write(text)
         except Exception as e:
@@ -300,25 +309,22 @@ class ChatApp(tk.Tk):
 
     def send_message(self, event=None):
         try:
-            # Добавление текста с использованием стилей
-            self.chat_history.configure(state="normal")
             user_input = self.input_entry.get("1.0", "end-1c").strip()
             if user_input:
                 model = self.model_var.get()
 
                 if model in model_functions:
+                    self.chat_history.configure(state="normal")
                     self.chat_history.insert(tk.END, f"Вы: {user_input}\n","user_input")
                     response = model_functions[model](user_input)
-                else:
-                    response = "Пожалуйста, выберите модель"
+                    self.chat_history.insert(tk.END, f"Ответ от {model}: {response}\n","response")
+                    self.chat_history.insert(tk.END, 155 * "=", "system_line")
+                    self.chat_history.configure(state="disabled")
 
-                self.chat_history.insert(tk.END, f"Ответ от {model}: {response}\n","response")
+                    if self.history_var.get():
+                        self.write_history(user_input, response)
 
-                if self.history_var.get():
-                    self.write_history(user_input, response)
-
-                self.input_entry.delete("1.0", "end")  # Очистка поля ввода
-                self.chat_history.configure(state="disabled")
+                    self.input_entry.delete("1.0", "end")  # Очистка поля ввода
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
