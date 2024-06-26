@@ -151,8 +151,8 @@ def gen_img(user_input, model):
         img_folder = 'img'
         if not os.path.exists(img_folder):
             os.makedirs(img_folder)
-
-        image_path = os.path.join(img_folder, f'{user_input}_{datetime.now().strftime('%d.%m.%Y %H:%M:%S')}.png')
+        now = datetime.now()
+        image_path = os.path.join(img_folder, f'{user_input}_{now.strftime('%d.%m.%Y_%H.%M.%S')}.png')
         with Image.open(BytesIO(resp)) as img:
             img.save(image_path)
 
