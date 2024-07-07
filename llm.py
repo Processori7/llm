@@ -388,7 +388,6 @@ class ChatApp(tk.Tk):
             messagebox.showerror("Возникла ошибка", e)
 
 
-
 if __name__ == "__main__":
     app = ChatApp()
     app.mainloop()
