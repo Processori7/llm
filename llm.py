@@ -1,5 +1,5 @@
-import os
 
+import os
 from ai4free import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra
 from freeGPT import Client
 import tkinter as tk
@@ -323,7 +323,7 @@ class ChatApp(tk.Tk):
     def write_history(self, user_input, response):
         try:
             now = datetime.now()
-            text = f"Дата и время: {now.strftime('%d.%m.%Y %H:%M:%S')}\nЗапрос пользователя: {user_input}\nОтвет ИИ: {response}\n\n{100*"="}"
+            text = f"Дата и время: {now.strftime('%d.%m.%Y %H:%M:%S')}\nЗапрос пользователя: {user_input}\nОтвет ИИ: {response}\n\n{100*"="}\n"
             with open("llm_history.txt", "a") as f:
                 f.write(text)
         except Exception as e:
@@ -339,8 +339,9 @@ class ChatApp(tk.Tk):
                     self.chat_history.configure(state="normal")
                     self.chat_history.insert(tk.END, f"Вы: {user_input}\n","user_input")
                     response = model_functions[model](user_input)
-                    self.chat_history.insert(tk.END, f"Ответ от {model}: {response}\n","response")
+                    self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n","response")
                     self.chat_history.insert(tk.END, 155 * "=", "system_line")
+                    self.chat_history.insert(tk.END, "\n", "system_line")
                     self.chat_history.configure(state="disabled")
 
                     if self.history_var.get():
