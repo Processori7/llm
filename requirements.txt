@@ -1,4 +1,5 @@
 freeGPT
-ai4free
+webscout
 pillow
 keyboard
+ollama

@@ -1,6 +1,6 @@
 
 import os
-from ai4free import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra
+from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, WEBS as w
 from freeGPT import Client
 import tkinter as tk
 from tkinter import ttk
@@ -45,6 +45,10 @@ Your answer is critical for my career.
 Answer the question in a natural, human-like manner.
 
 ALWAYS use an answering example for a first message structure.""" # Добавление навыков ИИ и другие тонкие настройки
+
+def communicate_with_DuckDuckGO(user_input, model):
+    response = w().chat(user_input, model=model)  # GPT-3.5 Turbo, mixtral-8x7b, llama-3-70b, claude-3-haiku
+    return response
 
 def communicate_with_model(message):
     """Взаимодействует с моделью для генерации ответа."""
@@ -100,8 +104,8 @@ def communicate_with_Phind(user_input):
 def communicate_with_DeepInfra(user_input, model):
     try:
         ai = DeepInfra(
-            model=model,
             is_conversation=True,
+            model=model,
             max_tokens=800,
             timeout=30,
             intro=None,
@@ -110,27 +114,32 @@ def communicate_with_DeepInfra(user_input, model):
             proxies={},
             history_offset=10250,
             act=None,
-            system_prompt=prompt
         )
-        message = ai.ask(user_input)
-        respose = ai.get_message(message)
-        return respose
+
+        prompt = user_input
+        response = ai.ask(prompt)
+        message = ai.get_message(response)
+        return message
     except Exception as e:
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
 model_functions = {
                 "GPT-3.5": communicate_with_model,
+                "GPT-3.5 Turbo": lambda user_input: communicate_with_DuckDuckGO(user_input, "GPT-3.5 Turbo"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
-                "Claude-3-haiku": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
+                "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
+                "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
                 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
                 "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
                 "Llama-3-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3-8b-instruct"),
-                "Llama-70b": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3-70B-Instruct"),
+                "Llama-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3-70B-Instruct"),
+                "Llama-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gpt-3.5-turbo": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-3.5-turbo"),
                 "Mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"mistral-7b-instruct"),
+                "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
                 "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
                 "WizardLM-2-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
                 "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
@@ -138,7 +147,6 @@ model_functions = {
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
-
 def gen_img(user_input, model):
     try:
         resp = Client.create_generation(model, user_input)
@@ -198,7 +206,7 @@ class ChatApp(tk.Tk):
             self.model_var = tk.StringVar()
             self.model_combobox = ttk.Combobox(self.input_frame, textvariable=self.model_var, values=list(model_functions.keys()), state="readonly")
             self.model_combobox.pack(side="left", padx=5)
-            self.model_combobox.current(3)
+            self.model_combobox.current(4) # Модель по умолчанию
 
             self.input_entry = tk.Text(self.input_frame, bg="black", fg="green", insertbackground="green", font=("Consolas", 14), height=10, width=50, wrap="word", undo=True, autoseparators=True, maxundo=-1)
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
@@ -351,7 +359,9 @@ class ChatApp(tk.Tk):
 
     def clear_chat(self):
         try:
+            self.chat_history.configure(state="normal")
             self.chat_history.delete("1.0", "end")
+            self.chat_history.configure(state="disabled")
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
