@@ -50,14 +50,6 @@ def communicate_with_DuckDuckGO(user_input, model):
     response = w().chat(user_input, model=model)  # GPT-3.5 Turbo, mixtral-8x7b, llama-3-70b, claude-3-haiku
     return response
 
-def communicate_with_model(message):
-    """Взаимодействует с моделью для генерации ответа."""
-    try:
-        resp = Client.create_completion("gpt3", message)
-        return resp
-    except Exception as e:
-        return f"Ошибка при общении с моделью: {e}"
-
 def communicate_with_KoboldAI(user_input):
     try:
         koboldai = KOBOLDAI()
@@ -124,7 +116,6 @@ def communicate_with_DeepInfra(user_input, model):
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
 model_functions = {
-                "GPT-3.5": communicate_with_model,
                 "GPT-3.5 Turbo": lambda user_input: communicate_with_DuckDuckGO(user_input, "GPT-3.5 Turbo"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
@@ -137,6 +128,7 @@ model_functions = {
                 "Llama-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3-70B-Instruct"),
                 "Llama-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
+                "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
                 "Gpt-3.5-turbo": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-3.5-turbo"),
                 "Mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"mistral-7b-instruct"),
                 "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
@@ -144,6 +136,8 @@ model_functions = {
                 "WizardLM-2-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
                 "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
                 "Dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
+                "Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
+                "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
