@@ -127,6 +127,7 @@ model_functions = {
                 "Llama-3-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3-8b-instruct"),
                 "Llama-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3-70B-Instruct"),
                 "Llama-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
+                "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
                 "Gpt-3.5-turbo": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-3.5-turbo"),
