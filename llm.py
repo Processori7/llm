@@ -117,6 +117,7 @@ def communicate_with_DeepInfra(user_input, model):
 
 model_functions = {
                 "GPT-3.5 Turbo": lambda user_input: communicate_with_DuckDuckGO(user_input, "GPT-3.5 Turbo"),
+                "GPT-4o-mini": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-4o-mini"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
@@ -130,7 +131,6 @@ model_functions = {
                 "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
-                "Gpt-3.5-turbo": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-3.5-turbo"),
                 "Mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"mistral-7b-instruct"),
                 "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
                 "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
