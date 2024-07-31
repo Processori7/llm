@@ -116,7 +116,7 @@ def communicate_with_DeepInfra(user_input, model):
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
 model_functions = {
-                "GPT-3.5 Turbo": lambda user_input: communicate_with_DuckDuckGO(user_input, "GPT-3.5 Turbo"),
+                "GPT-4o mini": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
                 "GPT-4o-mini": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-4o-mini"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
@@ -125,9 +125,9 @@ model_functions = {
                 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
                 "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
-                "Llama-3-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3-8b-instruct"),
-                "Llama-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3-70B-Instruct"),
                 "Llama-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
+                "Llama-3.1-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
+                "Llama-3.1-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
                 "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
