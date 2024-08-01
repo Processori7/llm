@@ -1,5 +1,6 @@
 
 import os
+import re
 from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, WEBS as w
 from freeGPT import Client
 import tkinter as tk
@@ -10,7 +11,11 @@ from tkinter import messagebox
 import keyboard
 from PIL import Image
 from io import BytesIO
+from packaging import version
+import requests
+import webbrowser
 
+CURRENT_VERSION = "1.15"
 
 prompt = """###INSTRUCTIONS###
 
@@ -46,8 +51,75 @@ Answer the question in a natural, human-like manner.
 
 ALWAYS use an answering example for a first message structure.""" # Добавление навыков ИИ и другие тонкие настройки
 
+
+# def update_app(update_url):
+#     try:
+#         # Загрузка последней версии llm.exe
+#         response = requests.get(update_url, stream=True)
+#         response.raise_for_status()
+#
+#         # Сохранение последней версии llm.exe во временной директории
+#         with TemporaryDirectory() as temp_dir:
+#             exe_file = os.path.join(temp_dir, "llm.exe")
+#             with open(exe_file, "wb") as f:
+#                 for chunk in response.iter_content(chunk_size=8192):
+#                     f.write(chunk)
+#
+#             # Запуск обновленного приложения в отдельном процессе
+#             subprocess.Popen([exe_file])
+#             current_exe = os.path.abspath("llm.exe")
+#
+#             # Проверяем, запускается ли обновленный файл из временной директории
+#             if os.path.dirname(exe_file) == temp_dir:
+#                 # Замена текущего файла llm.exe на последнюю версию
+#                 shutil.copy(exe_file, current_exe)
+#
+#             # Завершение процесса, использующего текущий файл llm.exe
+#             for proc in psutil.process_iter(['name', 'exe']):
+#                 try:
+#                     if proc.info['exe'] == current_exe:
+#                         proc.terminate()
+#                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+#                     pass
+#
+#         messagebox.showinfo("Ура!", "Приложение успешно обновлено!")
+#     except requests.exceptions.RequestException as e:
+#         messagebox.showerror("Ошибка обновления", f"Ошибка при загрузке обновления: {e}")
+#     except Exception as e:
+#         messagebox.showerror("Ошибка обновления", f"Произошла ошибка при обновлении: {e}")
+
+def update_app(update_url):
+    webbrowser.open(update_url)
+
+def check_for_updates():
+    try:
+        # Получение информации о последнем релизе на GitHub
+        response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
+        response.raise_for_status()
+        latest_release = response.json()
+        latest_version_str = latest_release["tag_name"]
+
+        # Извлечение числовой части версии
+        match = re.search(r'\d+\.\d+', latest_version_str)
+        if match:
+            latest_version = match.group()
+        else:
+            latest_version = latest_version_str
+
+        # Сравнение текущей версии с последней версией
+        if version.parse(latest_version) > version.parse(CURRENT_VERSION):
+            # Предложение пользователю обновление
+            if messagebox.showwarning("Доступно обновление",
+                                      f"Доступна новая версия {latest_version}. Хотите обновить?", icon='warning',
+                                      type='yesno') == 'yes':
+
+                update_app(latest_release["html_url"])
+    except requests.exceptions.RequestException as e:
+            messagebox.showerror("Ошибка при проверке обновлений", e)
+
+
 def communicate_with_DuckDuckGO(user_input, model):
-    response = w().chat(user_input, model=model)  # GPT-3.5 Turbo, mixtral-8x7b, llama-3-70b, claude-3-haiku
+    response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
     return response
 
 def communicate_with_KoboldAI(user_input):
@@ -392,5 +464,6 @@ class ChatApp(tk.Tk):
 
 
 if __name__ == "__main__":
+    check_for_updates()
     app = ChatApp()
     app.mainloop()

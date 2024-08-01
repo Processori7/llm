@@ -3,3 +3,5 @@ webscout
 pillow
 keyboard
 ollama
+requests
+packaging
