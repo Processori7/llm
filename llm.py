@@ -16,7 +16,7 @@ from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.13"
+CURRENT_VERSION = "1.16"
 
 prompt = """###INSTRUCTIONS###
 
