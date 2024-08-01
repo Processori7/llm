@@ -1,6 +1,10 @@
 
 import os
 import re
+import keyboard
+import requests
+import webbrowser
+from pathlib import Path
 from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, WEBS as w
 from freeGPT import Client
 import tkinter as tk
@@ -8,14 +12,11 @@ from tkinter import ttk
 import datetime
 from datetime import datetime
 from tkinter import messagebox
-import keyboard
 from PIL import Image
 from io import BytesIO
 from packaging import version
-import requests
-import webbrowser
 
-CURRENT_VERSION = "1.15"
+CURRENT_VERSION = "1.13"
 
 prompt = """###INSTRUCTIONS###
 
@@ -89,7 +90,8 @@ ALWAYS use an answering example for a first message structure.""" # Добавл
 #         messagebox.showerror("Ошибка обновления", f"Произошла ошибка при обновлении: {e}")
 
 def update_app(update_url):
-    webbrowser.open(update_url)
+   webbrowser.open(update_url)
+
 
 def check_for_updates():
     try:
@@ -97,23 +99,31 @@ def check_for_updates():
         response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
         response.raise_for_status()
         latest_release = response.json()
-        latest_version_str = latest_release["tag_name"]
 
-        # Извлечение числовой части версии
+        # Получение ссылки на файл exe последней версии
+        assets = latest_release["assets"]
+        for asset in assets:
+            if asset["name"].endswith(".exe"):
+                download_url = asset["browser_download_url"]
+                break
+        else:
+            messagebox.showerror("Ошибка обновления", "Не удалось найти файл exe для последней версии.")
+            return
+
+        # Сравнение текущей версии с последней версией
+        latest_version_str = latest_release["tag_name"]
         match = re.search(r'\d+\.\d+', latest_version_str)
         if match:
             latest_version = match.group()
         else:
             latest_version = latest_version_str
 
-        # Сравнение текущей версии с последней версией
         if version.parse(latest_version) > version.parse(CURRENT_VERSION):
             # Предложение пользователю обновление
             if messagebox.showwarning("Доступно обновление",
                                       f"Доступна новая версия {latest_version}. Хотите обновить?", icon='warning',
                                       type='yesno') == 'yes':
-
-                update_app(latest_release["html_url"])
+                update_app(download_url)
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
 
