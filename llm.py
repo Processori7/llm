@@ -53,7 +53,6 @@ ALWAYS use an answering example for a first message structure.""" # Добавл
 def update_app(update_url):
    webbrowser.open(update_url)
 
-
 def check_for_updates():
     try:
         # Получение информации о последнем релизе на GitHub
@@ -87,7 +86,6 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
-
 
 def communicate_with_DuckDuckGO(user_input, model):
     response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
@@ -185,6 +183,7 @@ model_functions = {
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
+
 def gen_img(user_input, model):
     try:
         resp = Client.create_generation(model, user_input)
@@ -205,7 +204,6 @@ def gen_img(user_input, model):
 class ChatApp(tk.Tk):
     def __init__(self):
         try:
-
             super().__init__()
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
@@ -432,7 +430,6 @@ class ChatApp(tk.Tk):
             return "break"
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
-
 
 if __name__ == "__main__":
     check_for_updates()
