@@ -1,4 +1,3 @@
-
 import os
 import re
 import keyboard
@@ -50,43 +49,6 @@ Your answer is critical for my career.
 Answer the question in a natural, human-like manner.
 
 ALWAYS use an answering example for a first message structure.""" # Добавление навыков ИИ и другие тонкие настройки
-
-
-# def update_app(update_url):
-#     try:
-#         # Загрузка последней версии llm.exe
-#         response = requests.get(update_url, stream=True)
-#         response.raise_for_status()
-#
-#         # Сохранение последней версии llm.exe во временной директории
-#         with TemporaryDirectory() as temp_dir:
-#             exe_file = os.path.join(temp_dir, "llm.exe")
-#             with open(exe_file, "wb") as f:
-#                 for chunk in response.iter_content(chunk_size=8192):
-#                     f.write(chunk)
-#
-#             # Запуск обновленного приложения в отдельном процессе
-#             subprocess.Popen([exe_file])
-#             current_exe = os.path.abspath("llm.exe")
-#
-#             # Проверяем, запускается ли обновленный файл из временной директории
-#             if os.path.dirname(exe_file) == temp_dir:
-#                 # Замена текущего файла llm.exe на последнюю версию
-#                 shutil.copy(exe_file, current_exe)
-#
-#             # Завершение процесса, использующего текущий файл llm.exe
-#             for proc in psutil.process_iter(['name', 'exe']):
-#                 try:
-#                     if proc.info['exe'] == current_exe:
-#                         proc.terminate()
-#                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-#                     pass
-#
-#         messagebox.showinfo("Ура!", "Приложение успешно обновлено!")
-#     except requests.exceptions.RequestException as e:
-#         messagebox.showerror("Ошибка обновления", f"Ошибка при загрузке обновления: {e}")
-#     except Exception as e:
-#         messagebox.showerror("Ошибка обновления", f"Произошла ошибка при обновлении: {e}")
 
 def update_app(update_url):
    webbrowser.open(update_url)
@@ -282,7 +244,7 @@ class ChatApp(tk.Tk):
             self.model_var = tk.StringVar()
             self.model_combobox = ttk.Combobox(self.input_frame, textvariable=self.model_var, values=list(model_functions.keys()), state="readonly")
             self.model_combobox.pack(side="left", padx=5)
-            self.model_combobox.current(4) # Модель по умолчанию
+            self.model_combobox.current(0) # Модель по умолчанию
 
             self.input_entry = tk.Text(self.input_frame, bg="black", fg="green", insertbackground="green", font=("Consolas", 14), height=10, width=50, wrap="word", undo=True, autoseparators=True, maxundo=-1)
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
