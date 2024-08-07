@@ -4,19 +4,18 @@ import re
 import keyboard
 import requests
 import webbrowser
-from pathlib import Path
+import datetime
+import tkinter as tk
 from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, WEBS as w
 from freeGPT import Client
-import tkinter as tk
 from tkinter import ttk
-import datetime
 from datetime import datetime
 from tkinter import messagebox
 from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.16"
+CURRENT_VERSION = "1.17"
 
 prompt = """###INSTRUCTIONS###
 
