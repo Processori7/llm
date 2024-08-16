@@ -93,7 +93,8 @@ def communicate_with_DuckDuckGO(user_input, model):
 
 def communicate_with_Julius(user_input):
     ai = Julius()
-    response = ai.chat(user_input, "GPT-4o")
+    ai.model = "GPT-4o"
+    response = ai.chat(user_input)
     return response
 def communicate_with_KoboldAI(user_input):
     try:
