@@ -5,7 +5,7 @@ import requests
 import webbrowser
 import datetime
 import tkinter as tk
-from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, WEBS as w
 from freeGPT import Client
 from tkinter import ttk
 from datetime import datetime
@@ -14,7 +14,7 @@ from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.18"
+CURRENT_VERSION = "1.19"
 
 prompt = """###INSTRUCTIONS###
 
@@ -91,10 +91,10 @@ def communicate_with_DuckDuckGO(user_input, model):
     response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
     return response
 
-# def communicate_with_Julius(user_input):
-#     ai = Julius()
-#     response = ai.chat(user_input, "GPT-4o")
-#     return response
+def communicate_with_Julius(user_input):
+    ai = Julius()
+    response = ai.chat(user_input, "GPT-4o")
+    return response
 def communicate_with_KoboldAI(user_input):
     try:
         koboldai = KOBOLDAI()
@@ -163,7 +163,7 @@ def communicate_with_DeepInfra(user_input, model):
 model_functions = {
                 "GPT-4o mini": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
                 "GPT-4o-mini": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-4o-mini"),
-                # "GPT-4o": lambda user_input: communicate_with_Julius(user_input),
+                "GPT-4o": lambda user_input: communicate_with_Julius(user_input),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
