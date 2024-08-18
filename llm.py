@@ -212,6 +212,7 @@ class ChatApp(ctk.CTk):
             super().__init__()
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
+            self.iconbitmap('icon.ico')
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
 
