@@ -248,15 +248,16 @@ class ChatApp(ctk.CTk):
             self.theme_button.pack(side="right", pady=(0,93))
 
             self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", 16), height=120, width=150, wrap="word", text_color="orange")
+            self.input_entry.edit_undo()
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
+
+            # Стек для хранения истории изменений
+            self.history = []
 
             # Горячие клавиши
             self.input_entry.bind("<Shift-Return>", self.insert_newline)
             self.input_entry.bind("<Return>", self.send_message)
-            self.input_entry.bind("ctrl+z", self.undo_input)
-            self.input_entry.bind("ctrl+c", self.copy_text)
-            self.input_entry.bind("ctrl+v", self.paste_text)
-            self.input_entry.bind("ctrl+a", self.select_all)
+            self.input_entry.bind("<KeyPress>", self.on_key_press)
 
             # Кнопки
             self.send_button = ctk.CTkButton(self.input_frame, text="Отправить", command=self.send_message,
@@ -313,33 +314,55 @@ class ChatApp(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
+    def record_history(self, event=None):
+        """Записываем текущее состояние текста в историю."""
+        current_text = self.input_entry.get("1.0", "end-1c")
+        if self.history and self.history[-1] == current_text:
+            return  # Не добавляем одинаковые состояния
+        self.history.append(current_text)
+
     def undo_input(self, event=None):
         """Функция для отмены последнего действия в поле ввода."""
         try:
             self.input_entry.configure(state="normal")
-            self.input_entry.edit_undo()  # Отменяем последнее действие
+            if self.history:  # Проверяем, есть ли история
+                # Удаляем текущее состояние из истории
+                self.history.pop()  # Удаляем текущее состояние
+                if self.history:  # Если в истории есть предыдущее состояние
+                    previous_text = self.history[-1]  # Получаем предыдущее состояние
+                    self.input_entry.delete("1.0", "end")  # Очищаем текущее содержимое
+                    self.input_entry.insert("1.0", previous_text)  # Вставляем предыдущее состояние
+                else:
+                    self.input_entry.delete("1.0", "end")  # Если истории больше нет, очищаем текстовое поле
         except Exception as e:
             messagebox.showerror("Ошибка", str(e))
 
     def on_key_press(self, event):
-        if event.keysym == "a" and event.state & 0x4:  # CTRL + a
-            try:
-                if self.chat_history.get("1.0", "end-1c"):
-                    self.chat_history.tag_add("sel", "1.0", "end-1c")
-                    return "break"
-            except Exception as e:
-                pass
-            try:
-                self.input_entry.tag_add("sel", "1.0", "end-1c")
-                return "break"
-            except Exception as e:
-                pass
-        # Обработка других горячих клавиш
-        elif event.keysym == "z" and event.state & 0x4:  # CTRL + z
-            self.undo_input()
-            return "break"
+        # Вывод отладочной информации
+        # print(f"Нажата клавиша: {event.keysym}, состояние: {event.state}, символ: {event.char}, код клавиши: {event.keycode}")
 
-    def select_all(self, event):
+        self.record_history(event) # История ввода
+
+        # Проверка нажатия Ctrl
+        if event.state & 0x4:  # Проверка, удерживается ли Ctrl
+            # Проверка нажатия Ctrl + A
+            if event.keycode == 65:  # Ctrl + A (или Ctrl + Ф)
+                self.select_all()
+                return "break"
+            # Проверка нажатия Ctrl + Z
+            elif event.keycode == 90:  # Ctrl + Z (или Ctrl + Я)
+                self.undo_input()
+                return "break"
+            # Проверка нажатия Ctrl + C
+            elif event.keycode == 67:  # Ctrl + C (или Ctrl + С)
+                self.copy_text()
+                return "break"
+            # Проверка нажатия Ctrl + V
+            elif event.keycode == 86:  # Ctrl + V (или Ctrl + В)
+                self.paste_text()
+                return "break"
+
+    def select_all(self, event=None):
         try:
             if self.chat_history.get("1.0", "end-1c"):
                 # Выделяем весь текст в виджете chat_history
@@ -362,13 +385,6 @@ class ChatApp(ctk.CTk):
             self.input_entry.edit_separator()
             self.input_entry.edit_modified(False)
             return "break"
-        except Exception as e:
-            messagebox.showerror("Возникла ошибка", e)
-
-    def check_input(self, event):
-        try:
-            if self.input_entry.get("1.0", "end-1c").strip() == "":
-                self.input_entry.delete("1.0", "end")
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
@@ -407,17 +423,19 @@ class ChatApp(ctk.CTk):
 
     def copy_text(self, event=None):
         try:
-            if self.chat_history.get("1.0", "end-1c"):
+            # Проверяем, есть ли выделенный текст в chat_history
+            if self.chat_history.tag_ranges("sel"):
                 selected_text = self.chat_history.get("sel.first", "sel.last")
                 self.clipboard_clear()
                 self.clipboard_append(selected_text)
-            else:
+            # Если в chat_history нет выделенного текста, проверяем input_entry
+            elif self.input_entry.tag_ranges("sel"):
                 selected_text = self.input_entry.get("sel.first", "sel.last")
                 self.clipboard_clear()
                 self.clipboard_append(selected_text)
             return "break"
         except Exception as e:
-            messagebox.showerror("Возникла ошибка", e)
+            messagebox.showerror("Возникла ошибка", str(e))
 
     def toggle_theme(self):
         current_theme = ctk.get_appearance_mode()
