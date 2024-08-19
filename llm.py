@@ -3,10 +3,11 @@ import re
 import requests
 import webbrowser
 import datetime
-from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, WEBS as w
-from freeGPT import Client
+import tkinter.font as tkFont
 import customtkinter as ctk
 import tkinter as tk
+from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, WEBS as w
+from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox
 from PIL import Image
@@ -304,7 +305,20 @@ class ChatApp(ctk.CTk):
 
                     response = model_functions[model](user_input)
                     self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n", "response")
-                    self.chat_history.insert(tk.END, 155 * "=", "system_line")
+                    # Получаем ширину виджета chat_history
+                    chat_width = self.chat_history.winfo_width()
+
+                    # Получаем шрифт и ширину символа "="
+                    font = tkFont.Font(font=self.chat_history.cget("font"))
+                    print(font)
+                    equals_width = font.measure('=')
+                    print(equals_width)
+
+                    # Рассчитываем количество символов "=" для заполнения ширины
+                    num_equals = chat_width // (equals_width -3)  # Учитываем отступы
+                    print(num_equals)
+                    # Вставляем символы "="
+                    self.chat_history.insert(tk.END, (num_equals -2) * "=", "system_line")
                     self.chat_history.insert(tk.END, "\n", "system_line")
                     self.chat_history.configure(state="disabled")
 
@@ -443,9 +457,15 @@ class ChatApp(ctk.CTk):
         if current_theme == "Dark":
             ctk.set_appearance_mode("light")
             self.theme_button.configure(text="Тёмная тема")
+            self.chat_history.tag_config("user_input", foreground="orange")
+            self.chat_history.tag_config("response", foreground="#4F2982")
+            self.chat_history.tag_config("system_line", foreground="#000080")
         else:
             ctk.set_appearance_mode("dark")
             self.theme_button.configure(text="Светлая тема")
+            self.chat_history.tag_config("user_input", foreground="orange")
+            self.chat_history.tag_config("response", foreground="yellow")
+            self.chat_history.tag_config("system_line", foreground="cyan")
 
 if __name__ == "__main__":
     check_for_updates()
