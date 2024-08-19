@@ -310,13 +310,10 @@ class ChatApp(ctk.CTk):
 
                     # Получаем шрифт и ширину символа "="
                     font = tkFont.Font(font=self.chat_history.cget("font"))
-                    print(font)
                     equals_width = font.measure('=')
-                    print(equals_width)
 
                     # Рассчитываем количество символов "=" для заполнения ширины
                     num_equals = chat_width // (equals_width -3)  # Учитываем отступы
-                    print(num_equals)
                     # Вставляем символы "="
                     self.chat_history.insert(tk.END, (num_equals -2) * "=", "system_line")
                     self.chat_history.insert(tk.END, "\n", "system_line")
