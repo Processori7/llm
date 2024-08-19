@@ -6,7 +6,7 @@ import datetime
 import tkinter.font as tkFont
 import customtkinter as ctk
 import tkinter as tk
-from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, LiaoBots, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox
@@ -14,7 +14,7 @@ from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.20"
+CURRENT_VERSION = "1.21"
 
 prompt = """###INSTRUCTIONS###
 
@@ -48,7 +48,10 @@ Your answer is critical for my career.
 
 Answer the question in a natural, human-like manner.
 
-ALWAYS use an answering example for a first message structure.""" # Добавление навыков ИИ и другие тонкие настройки
+ALWAYS use an answering example for a first message structure.
+
+Пожалуйста, говори со мной на русском языке, пока я не попрошу сменить язык на другой.
+""" # Добавление навыков ИИ и другие тонкие настройки
 
 def update_app(update_url):
    webbrowser.open(update_url)
@@ -86,6 +89,26 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
+
+
+def communicate_with_LiaoBots(user_input, model):
+    ai = LiaoBots()
+    ai.model = model
+    ai.system_prompt = prompt
+    response = ai.chat(user_input)
+    return response
+
+def communicate_with_RUBIKSAI(user_input, model):
+    ai = RUBIKSAI()
+    ai.model = model
+    response = ai.chat(user_input)
+    return response
+
+def communicate_with_DarkAi(user_input, model):
+    ai = DARKAI()
+    ai.model = model
+    response = ai.chat(user_input)
+    return response
 
 def communicate_with_DuckDuckGO(user_input, model):
     response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
@@ -162,9 +185,14 @@ def communicate_with_DeepInfra(user_input, model):
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
 model_functions = {
-                "GPT-4o mini": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
+                "GPT-4o-mini(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
                 "GPT-4o-mini": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-4o-mini"),
                 "GPT-4o": lambda user_input: communicate_with_Julius(user_input),
+                "gpt-4o(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
+                "gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini"),
+                "gpt-4o-mini(LiaoBots)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini"),
+                "gpt-4o(LiaoBots EN)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o"),
+                "gpt-4o-mini-free(LiaoBots EN)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini-free"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
@@ -174,6 +202,7 @@ model_functions = {
                 "Phind": communicate_with_Phind,
                 "Llama 3-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
                 "Llama-3.1-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
+                "llama-3.1-405b(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
                 # "Llama-3.1-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
                 # "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
@@ -291,9 +320,6 @@ class ChatApp(ctk.CTk):
     def send_message(self, event=None):
         try:
             user_input = self.input_entry.get("1.0", "end-1c")
-            # Добавляем сообщение "Ожидайте" в поле ввода
-            self.input_entry.delete("1.0", "end-1c")  # Сначала очищаем поле ввода
-            self.input_entry.insert("1.0", "Ожидайте...", "system_line")  # Вставляем сообщение "Ожидайте"
             user_input = user_input.replace('\n', '')  # Удаляем символы новой строки
             user_input = user_input.strip()  # Удаляем пробелы в начале и конце строки
             if user_input:
@@ -315,7 +341,7 @@ class ChatApp(ctk.CTk):
                     # Рассчитываем количество символов "=" для заполнения ширины
                     num_equals = chat_width // (equals_width -3)  # Учитываем отступы
                     # Вставляем символы "="
-                    self.chat_history.insert(tk.END, (num_equals -2) * "=", "system_line")
+                    self.chat_history.insert(tk.END, (num_equals -3) * "=", "system_line")
                     self.chat_history.insert(tk.END, "\n", "system_line")
                     self.chat_history.configure(state="disabled")
 
@@ -359,6 +385,7 @@ class ChatApp(ctk.CTk):
         if event.state & 0x4:  # Проверка, удерживается ли Ctrl
             # Проверка нажатия Ctrl + A
             if event.keycode == 65:  # Ctrl + A (или Ctrl + Ф)
+                print("CTRL+A")
                 self.select_all()
                 return "break"
             # Проверка нажатия Ctrl + Z
