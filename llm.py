@@ -14,7 +14,7 @@ from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.21"
+CURRENT_VERSION = "1.22"
 
 prompt = """###INSTRUCTIONS###
 
@@ -164,23 +164,11 @@ def communicate_with_Phind(user_input):
 
 def communicate_with_DeepInfra(user_input, model):
     try:
-        ai = DeepInfra(
-            is_conversation=True,
-            model=model,
-            max_tokens=800,
-            timeout=30,
-            intro=None,
-            filepath=None,
-            update_file=True,
-            proxies={},
-            history_offset=10250,
-            act=None,
-        )
-
+        ai = DeepInfra()
+        ai.model=model
         prompt = user_input
         response = ai.ask(prompt)
-        message = ai.get_message(response)
-        return message
+        return response
     except Exception as e:
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
@@ -197,25 +185,25 @@ model_functions = {
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
                 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
-                # "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
-                # "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
+                "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
+                "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
                 "Llama 3-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
                 "Llama-3.1-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
                 "llama-3.1-405b(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
-                # "Llama-3.1-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
-                # "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
+                "Llama-3.1-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
+                "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
                 "Mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"mistral-7b-instruct"),
                 "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
-                # "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
-                # "WizardLM-2-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
-                # "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
-                # "Dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
-                # "Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
-                # "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
-                # "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
+                "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
+                "WizardLM-2-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
+                "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
+                "Dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
+                "Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
+                "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
+                "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
 
@@ -242,6 +230,8 @@ class ChatApp(ctk.CTk):
             super().__init__()
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
+
+            self.isTranslate = False
 
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
@@ -273,12 +263,8 @@ class ChatApp(ctk.CTk):
             self.model_combobox.pack(side="left", padx=5)
             self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
 
-            # Кнопка переключения темы
-            self.theme_button = ctk.CTkButton(self.input_frame, text="Светлая тема", command=self.toggle_theme,
-                                               font=("Consolas", 14), text_color="white")
-            self.theme_button.pack(side="right", pady=(0,93))
 
-            self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", 16), height=120, width=150, wrap="word", text_color="orange")
+            self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", 16), height=200, width=180, wrap="word", text_color="orange")
             self.input_entry.edit_undo()
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
 
@@ -290,14 +276,28 @@ class ChatApp(ctk.CTk):
             self.input_entry.bind("<Return>", self.send_message)
             self.input_entry.bind("<KeyPress>", self.on_key_press)
 
+            # Создаем фрейм для кнопок
+            self.button_frame = ctk.CTkFrame(self.input_frame)
+            self.button_frame.pack(side="top", fill="x")  # Упаковываем фрейм сверху и растягиваем по ширине
+
             # Кнопки
-            self.send_button = ctk.CTkButton(self.input_frame, text="Отправить", command=self.send_message,
-                                               font=("Consolas", 14), text_color="white")
+            self.send_button = ctk.CTkButton(self.button_frame, text="Отправить", command=self.send_message,
+                                             font=("Consolas", 14), text_color="white")
             self.send_button.pack(side="top", padx=5, pady=10)
 
-            self.clear_button = ctk.CTkButton(self.input_frame, text="Очистить чат", command=self.clear_chat,
-                                                font=("Consolas", 14), text_color="white")
-            self.clear_button.pack(side="top", padx=5, pady=15)
+            self.clear_button = ctk.CTkButton(self.button_frame, text="Очистить чат", command=self.clear_chat,
+                                              font=("Consolas", 14), text_color="white")
+            self.clear_button.pack(side="top", padx=5, pady=10)
+
+            # Кнопка переключения темы
+            self.theme_button = ctk.CTkButton(self.button_frame, text="Светлая тема", command=self.toggle_theme,
+                                              font=("Consolas", 14), text_color="white")
+            self.theme_button.pack(side="top", padx=5, pady=10)
+
+            # Кнопка переключения языка
+            self.lang_button = ctk.CTkButton(self.button_frame, text="English", command=self.toggle_lang,
+                                             font=("Consolas", 14), text_color="white")
+            self.lang_button.pack(side="top", padx=5, pady=15)
 
             # Определение тегов для цветного текста
             self.chat_history.tag_add("user_input", "1.0")
@@ -490,6 +490,28 @@ class ChatApp(ctk.CTk):
             self.chat_history.tag_config("user_input", foreground="orange")
             self.chat_history.tag_config("response", foreground="yellow")
             self.chat_history.tag_config("system_line", foreground="cyan")
+
+    def toggle_lang(self):
+        if self.isTranslate:
+            # Переключаем на русский
+            self.model_label.configure(text="Выберите модель:")
+            self.send_button.configure(text="Отправить")
+            self.clear_button.configure(text="Очистить чат")
+            self.theme_button.configure(text="Светлая тема")
+            self.lang_button.configure(text="English")
+            self.history_checkbox.configure(text="Вести историю")
+        else:
+            # Переключаем на английский
+            self.model_label.configure(text="Select model:")
+            self.send_button.configure(text="Send")
+            self.clear_button.configure(text="Clear chat")
+            self.theme_button.configure(text="Light theme")
+            self.lang_button.configure(text="Русский")
+            self.history_checkbox.configure(text="Keep history")
+
+        self.isTranslate = not self.isTranslate  # Переключаем состояние
+
+
 
 if __name__ == "__main__":
     check_for_updates()
