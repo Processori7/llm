@@ -6,3 +6,4 @@ requests
 packaging
 customtkinter
 huggingface_hub
+pystray

@@ -6,6 +6,8 @@ import datetime
 import tkinter.font as tkFont
 import customtkinter as ctk
 import tkinter as tk
+import pystray
+import ctypes
 from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, LiaoBots, WEBS as w
 from freeGPT import Client
 from datetime import datetime
@@ -14,7 +16,7 @@ from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.22"
+CURRENT_VERSION = "1.23"
 
 prompt = """###INSTRUCTIONS###
 
@@ -190,16 +192,16 @@ model_functions = {
                 "Phind": communicate_with_Phind,
                 "Llama 3-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
                 "Llama-3.1-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
-                "llama-3.1-405b(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
                 "Llama-3.1-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
-                "Meta-Llama-3.1-405B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
+                "Llama-3.1-405b(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
+                "Meta-Llama-3.1-405B": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
                 "Mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"mistral-7b-instruct"),
                 "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
-                "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
+                "Mixtral-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
                 "WizardLM-2-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
-                "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
+                "Mixtral-8x7B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
                 "Dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
                 "Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
                 "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
@@ -235,6 +237,17 @@ class ChatApp(ctk.CTk):
 
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
+
+            self.image = Image.open("icon.ico")
+            self.iconbitmap("icon.ico")
+            self.menu = (
+                pystray.MenuItem("Открыть", self.show_window, default=True),
+                pystray.MenuItem("Закрыть", self.on_exit)
+            )
+            self.icon = pystray.Icon("name", self.image, "Free Ai Services", self.menu)
+
+            # Привязываем событие закрытия окна
+            self.protocol("WM_DELETE_WINDOW", self.hide_window)
 
             # Создание виджета chat_history с прокруткой
             self.chat_history_frame = ctk.CTkFrame(self)
@@ -297,7 +310,12 @@ class ChatApp(ctk.CTk):
             # Кнопка переключения языка
             self.lang_button = ctk.CTkButton(self.button_frame, text="English", command=self.toggle_lang,
                                              font=("Consolas", 14), text_color="white")
-            self.lang_button.pack(side="top", padx=5, pady=15)
+            self.lang_button.pack(side="top", padx=5, pady=10)
+
+            # Кнопка закрытия программы
+            self.lang_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
+                                             font=("Consolas", 14), text_color="white")
+            self.lang_button.pack(side="top", padx=5, pady=10)
 
             # Определение тегов для цветного текста
             self.chat_history.tag_add("user_input", "1.0")
@@ -314,8 +332,25 @@ class ChatApp(ctk.CTk):
             self.history_checkbox = ctk.CTkCheckBox(self.input_frame, text="Вести историю", variable=self.history_var)
             self.history_checkbox.pack(side="top", padx=5, pady=5)
 
+
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def hide_window(self):
+        # Скрываем окно
+        hwnd = ctypes.windll.user32.FindWindowW(None, self.title())
+        ctypes.windll.user32.ShowWindow(hwnd, 0)  # 0 - SW_HIDE
+        self.icon.run_detached()  # Запускаем иконку в отдельном потоке
+
+    def show_window(self):
+        # Показываем окно
+        hwnd = ctypes.windll.user32.FindWindowW(None, self.title())
+        ctypes.windll.user32.ShowWindow(hwnd, 5)  # 5 - SW_SHOW
+        ctypes.windll.user32.SetForegroundWindow(hwnd)  # Устанавливаем окно на передний план
+        # self.after(0, self.deiconify)
+
+    def on_exit(self):
+        os._exit(0)
 
     def send_message(self, event=None):
         try:
@@ -500,6 +535,7 @@ class ChatApp(ctk.CTk):
             self.theme_button.configure(text="Светлая тема")
             self.lang_button.configure(text="English")
             self.history_checkbox.configure(text="Вести историю")
+            self.lang_button.configure(text="Выход")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -508,6 +544,7 @@ class ChatApp(ctk.CTk):
             self.theme_button.configure(text="Light theme")
             self.lang_button.configure(text="Русский")
             self.history_checkbox.configure(text="Keep history")
+            self.lang_button.configure(text="Exit")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
