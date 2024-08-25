@@ -313,9 +313,9 @@ class ChatApp(ctk.CTk):
             self.lang_button.pack(side="top", padx=5, pady=10)
 
             # Кнопка закрытия программы
-            self.lang_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
+            self.exit_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
                                              font=("Consolas", 14), text_color="white")
-            self.lang_button.pack(side="top", padx=5, pady=10)
+            self.exit_button.pack(side="top", padx=5, pady=10)
 
             # Определение тегов для цветного текста
             self.chat_history.tag_add("user_input", "1.0")
@@ -535,7 +535,7 @@ class ChatApp(ctk.CTk):
             self.theme_button.configure(text="Светлая тема")
             self.lang_button.configure(text="English")
             self.history_checkbox.configure(text="Вести историю")
-            self.lang_button.configure(text="Выход")
+            self.exit_button.configure(text="Выход")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -544,7 +544,7 @@ class ChatApp(ctk.CTk):
             self.theme_button.configure(text="Light theme")
             self.lang_button.configure(text="Русский")
             self.history_checkbox.configure(text="Keep history")
-            self.lang_button.configure(text="Exit")
+            self.exit_button.configure(text="Exit")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
