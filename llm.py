@@ -8,15 +8,15 @@ import customtkinter as ctk
 import tkinter as tk
 import pystray
 import ctypes
-from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, LiaoBots, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, LiaoBots, VLM, DeepInfraImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from PIL import Image
 from io import BytesIO
 from packaging import version
 
-CURRENT_VERSION = "1.23"
+CURRENT_VERSION = "1.24"
 
 prompt = """###INSTRUCTIONS###
 
@@ -121,6 +121,7 @@ def communicate_with_Julius(user_input):
     ai.model = "GPT-4o"
     response = ai.chat(user_input)
     return response
+    
 def communicate_with_KoboldAI(user_input):
     try:
         koboldai = KOBOLDAI()
@@ -206,8 +207,40 @@ model_functions = {
                 "Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
                 "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
+                "MiniCPM-Llama3-V-2_5(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
+                "llava-1.5-7b-hf(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
+                "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
+                "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
+                "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
+                "Stable-diffusion-v1-5_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "runwayml/stable-diffusion-v1-5"),
+                "Stable-diffusion-v1-4_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "CompVis/stable-diffusion-v1-4"),
+                "Deliberate_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "XpucT/Deliberate"),
+                "Openjourney_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "prompthero/openjourney"),
+                "Sdxl_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stability-ai/sdxl"),
+                "Custom-diffusion_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "uwulewd/custom-diffusion"),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
+
+def communicate_with_VLM(user_input, model):
+    try:
+        image_path =filedialog.askopenfilename(
+            title="Выберите изображение",
+            filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")]
+        )
+        if image_path:
+            vlm_instance = VLM(model=model, is_conversation=True, max_tokens=600, timeout=30)
+            image_base64 = vlm_instance.encode_image_to_base64(image_path)
+
+            prompt = {
+                "content": f"{user_input}",
+                "image": image_base64
+            }
+
+            # Generate a response
+            response = vlm_instance.chat(prompt)
+            return response
+    except Exception as e:
+        return f"Ошибка при общении с DeepInfraAI: {e}"
 
 def gen_img(user_input, model):
     try:
@@ -225,6 +258,23 @@ def gen_img(user_input, model):
 
     except Exception as e:
        return f"Ошибка при генерации картинки: {e}"
+
+def communicate_with_DeepInfraImager(user_input, model):
+    try:
+        ai = DeepInfraImager()
+        ai.model=model
+        resp = ai.generate(user_input, 1)
+        img_folder = 'img'
+        if not os.path.exists(img_folder):
+            os.makedirs(img_folder)
+        now = datetime.now()
+        image_path = os.path.join(img_folder, f'{user_input}_{now.strftime('%d.%m.%Y_%H.%M.%S')}.png')
+        with Image.open(BytesIO(resp)) as img:
+            img.save(image_path)
+
+        return f"Картинка сохранена в: {image_path}"
+    except Exception as e:
+        return f"Ошибка при генерации картинки: {e}"
 
 class ChatApp(ctk.CTk):
     def __init__(self):
