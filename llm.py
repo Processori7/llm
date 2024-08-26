@@ -1,4 +1,6 @@
 import os
+# Скрываем сообщения от Pygame
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import re
 import requests
 import webbrowser
@@ -15,6 +17,7 @@ from tkinter import messagebox, filedialog
 from PIL import Image
 from io import BytesIO
 from packaging import version
+
 
 CURRENT_VERSION = "1.24"
 
@@ -171,7 +174,9 @@ def communicate_with_DeepInfra(user_input, model):
         ai.model=model
         prompt = user_input
         response = ai.ask(prompt)
-        return response
+        # Извлекаем только content из ответа
+        content = response['choices'][0]['message']['content']
+        return content
     except Exception as e:
         return f"Ошибка при общении с DeepInfraAI: {e}"
 
