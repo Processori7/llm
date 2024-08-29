@@ -10,7 +10,7 @@ import customtkinter as ctk
 import tkinter as tk
 import pystray
 import ctypes
-from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, LiaoBots, VLM, DeepInfraImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -19,7 +19,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.24"
+CURRENT_VERSION = "1.25"
 
 prompt = """###INSTRUCTIONS###
 
@@ -54,8 +54,6 @@ Your answer is critical for my career.
 Answer the question in a natural, human-like manner.
 
 ALWAYS use an answering example for a first message structure.
-
-Пожалуйста, говори со мной на русском языке, пока я не попрошу сменить язык на другой.
 """ # Добавление навыков ИИ и другие тонкие настройки
 
 def update_app(update_url):
@@ -94,14 +92,6 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
-
-
-def communicate_with_LiaoBots(user_input, model):
-    ai = LiaoBots()
-    ai.model = model
-    ai.system_prompt = prompt
-    response = ai.chat(user_input)
-    return response
 
 def communicate_with_RUBIKSAI(user_input, model):
     ai = RUBIKSAI()
@@ -186,9 +176,6 @@ model_functions = {
                 "GPT-4o": lambda user_input: communicate_with_Julius(user_input),
                 "gpt-4o(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
                 "gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini"),
-                "gpt-4o-mini(LiaoBots)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini"),
-                "gpt-4o(LiaoBots EN)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o"),
-                "gpt-4o-mini-free(LiaoBots EN)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini-free"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
@@ -213,7 +200,6 @@ model_functions = {
                 "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "MiniCPM-Llama3-V-2_5(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
-                "llava-1.5-7b-hf(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
                 "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
                 "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
                 "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
