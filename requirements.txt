@@ -8,3 +8,5 @@ customtkinter
 huggingface_hub
 pystray
 pygame
+google-api-python-client
+google-generativeai

@@ -19,7 +19,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.25"
+CURRENT_VERSION = "1.26"
 
 prompt = """###INSTRUCTIONS###
 
