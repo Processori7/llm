@@ -10,3 +10,4 @@ pystray
 pygame
 google-api-python-client
 google-generativeai
+lxml[html_clean]

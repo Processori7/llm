@@ -19,7 +19,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.26"
+CURRENT_VERSION = "1.27"
 
 prompt = """###INSTRUCTIONS###
 
@@ -114,7 +114,7 @@ def communicate_with_Julius(user_input):
     ai.model = "GPT-4o"
     response = ai.chat(user_input)
     return response
-    
+
 def communicate_with_KoboldAI(user_input):
     try:
         koboldai = KOBOLDAI()
@@ -183,10 +183,11 @@ model_functions = {
                 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
                 "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
-                "Llama 3-70b (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
-                "Llama-3.1-8b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
-                "Llama-3.1-70b (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
-                "Llama-3.1-405b(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
+                "Reflection-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "mattshumer/Reflection-Llama-3.1-70B"),
+                "Llama 3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
+                "Llama-3.1-8B-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
+                "Llama-3.1-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
+                "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
                 "Meta-Llama-3.1-405B": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
                 "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
                 "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
@@ -250,20 +251,33 @@ def gen_img(user_input, model):
     except Exception as e:
        return f"Ошибка при генерации картинки: {e}"
 
+
 def communicate_with_DeepInfraImager(user_input, model):
     try:
         ai = DeepInfraImager()
-        ai.model=model
+        ai.model = model
         resp = ai.generate(user_input, 1)
+
+        # Проверяем, что resp - это список изображений
+        if isinstance(resp, list) and len(resp) > 0:
+            num_images = len(resp)  # Количество изображений
+        else:
+            raise ValueError("Генерация изображения не удалась, получен пустой ответ.")
+
         img_folder = 'img'
         if not os.path.exists(img_folder):
             os.makedirs(img_folder)
-        now = datetime.now()
-        image_path = os.path.join(img_folder, f'{user_input}_{now.strftime('%d.%m.%Y_%H.%M.%S')}.png')
-        with Image.open(BytesIO(resp)) as img:
-            img.save(image_path)
 
-        return f"Картинка сохранена в: {image_path}"
+        now = datetime.now()
+        saved_images = []  # Список для хранения путей сохраненных изображений
+
+        for i, image_data in enumerate(resp):
+            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
+            with Image.open(BytesIO(image_data)) as img:
+                img.save(image_path)
+                saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
+
+        return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
     except Exception as e:
         return f"Ошибка при генерации картинки: {e}"
 
@@ -298,10 +312,11 @@ class ChatApp(ctk.CTk):
             self.chat_history.pack(fill="both", expand=True)
             self.chat_history.configure(state="disabled")
 
-            # Добавление контекстного меню
+            # Добавление контекстного меню для chat_history
             self.chat_history.bind("<Button-3>", self.show_context_menu)
-            self.context_menu = tk.Menu(self, tearoff=0)
-            self.context_menu.add_command(label="Копировать", command=self.copy_text)
+            self.chat_history_context_menu = tk.Menu(self, tearoff=0)
+            self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
+            self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
 
             self.input_frame = ctk.CTkFrame(self)
             self.input_frame.pack(fill="x", padx=10, pady=10)
@@ -321,6 +336,14 @@ class ChatApp(ctk.CTk):
             self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", 16), height=200, width=180, wrap="word", text_color="orange")
             self.input_entry.edit_undo()
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
+
+            # Добавление контекстного меню для input_entry
+            self.input_entry.bind("<Button-3>", self.show_context_menu)
+            self.context_menu = tk.Menu(self, tearoff=0)
+            self.context_menu.add_command(label="Копировать", command=self.copy_text)
+            self.context_menu.add_command(label="Выделить всё", command=self.select_all)
+            self.context_menu.add_command(label="Вставить", command=self.paste_text)
+            self.context_menu.add_command(label="Отменить действие", command=self.undo_input)
 
             # Стек для хранения истории изменений
             self.history = []
@@ -373,9 +396,19 @@ class ChatApp(ctk.CTk):
             self.history_checkbox = ctk.CTkCheckBox(self.input_frame, text="Вести историю", variable=self.history_var)
             self.history_checkbox.pack(side="top", padx=5, pady=5)
 
+            # Переменная для отслеживания активного виджета
+            self.active_widget = None
+
+            # Привязываем события фокуса к виджетам
+            self.chat_history.bind("<FocusIn>", self.set_active_widget)
+            self.input_entry.bind("<FocusIn>", self.set_active_widget)
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def set_active_widget(self, event):
+        # Устанавливаем активный виджет
+        self.active_widget = event.widget
 
     def hide_window(self):
         # Скрываем окно
@@ -402,11 +435,12 @@ class ChatApp(ctk.CTk):
                 model = self.model_var.get()
 
                 if model in model_functions:
-                    self.chat_history.configure(state="normal")
+                    self.chat_history.configure(state="normal")  # Включаем редактирование
                     self.chat_history.insert(tk.END, f"Вы: {user_input}\n", "user_input")
 
                     response = model_functions[model](user_input)
                     self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n", "response")
+
                     # Получаем ширину виджета chat_history
                     chat_width = self.chat_history.winfo_width()
 
@@ -415,11 +449,11 @@ class ChatApp(ctk.CTk):
                     equals_width = font.measure('=')
 
                     # Рассчитываем количество символов "=" для заполнения ширины
-                    num_equals = chat_width // (equals_width -3)  # Учитываем отступы
+                    num_equals = chat_width // (equals_width - 3)  # Учитываем отступы
                     # Вставляем символы "="
-                    self.chat_history.insert(tk.END, (num_equals -3) * "=", "system_line")
+                    self.chat_history.insert(tk.END, (num_equals - 3) * "=", "system_line")
                     self.chat_history.insert(tk.END, "\n", "system_line")
-                    self.chat_history.configure(state="disabled")
+                    self.chat_history.configure(state="disabled")  # Возвращаем в состояние "disabled"
 
                     if self.history_var.get():
                         self.write_history(user_input, response)
@@ -461,36 +495,54 @@ class ChatApp(ctk.CTk):
         if event.state & 0x4:  # Проверка, удерживается ли Ctrl
             # Проверка нажатия Ctrl + A
             if event.keycode == 65:  # Ctrl + A (или Ctrl + Ф)
-                print("CTRL+A")
+                # print("CTRL + A")
                 self.select_all()
                 return "break"
             # Проверка нажатия Ctrl + Z
             elif event.keycode == 90:  # Ctrl + Z (или Ctrl + Я)
+                # print("CTRL + Z")
                 self.undo_input()
                 return "break"
             # Проверка нажатия Ctrl + C
             elif event.keycode == 67:  # Ctrl + C (или Ctrl + С)
+                # print("CTRL + C")
                 self.copy_text()
                 return "break"
             # Проверка нажатия Ctrl + V
             elif event.keycode == 86:  # Ctrl + V (или Ctrl + В)
+                # print("CTRL + V")
                 self.paste_text()
                 return "break"
 
     def select_all(self, event=None):
         try:
-            if self.chat_history.get("1.0", "end-1c"):
-                # Выделяем весь текст в виджете chat_history
-                self.chat_history.tag_add("sel", "1.0", "end-1c")
-            else:
-                self.input_entry.tag_add("sel", "1.0", "end-1c")
+            self.chat_history.configure(state="normal")  # Включаем редактирование
+            # Получаем текущий виджет, имеющий фокус
+            current_widget = self.active_widget
+            # print(f"Текущий виджет с фокусом: {current_widget}")
+
+            if str(current_widget) == '.!ctkframe.!ctktextbox.!text':
+                # Если фокус на chat_history, выделяем весь текст в нем
+                if self.chat_history.get("1.0", "end-1c").strip():  # Убираем пробелы
+                    self.chat_history.tag_add("sel", "1.0", "end-1c")
+                    self.chat_history.mark_set("insert", "1.0")  # Устанавливаем курсор в начало
+            elif str(current_widget) == '.!ctkframe2.!ctktextbox.!text':
+                # Если фокус на input_entry, выделяем весь текст в нем
+                if self.input_entry.get("1.0", "end-1c").strip():  # Убираем пробелы
+                    self.input_entry.tag_add("sel", "1.0", "end-1c")  # Выделяем весь текст
+                    self.input_entry.mark_set("insert", "1.0")  # Устанавливаем курсор в начало
+            self.chat_history.configure(state="disable")  # Включаем редактирование
             return "break"
         except Exception as e:
-            messagebox.showerror("Возникла ошибка", e)
+            messagebox.showerror("Возникла ошибка", f"Ошибка при выделении текста: {e}")
 
     def show_context_menu(self, event):
         try:
-            self.context_menu.post(event.x_root, event.y_root)
+            # print(f"Метод вызван, виджет: {event.widget}")
+            if str(event.widget) == '.!ctkframe.!ctktextbox.!text':
+                self.chat_history_context_menu.post(event.x_root, event.y_root)
+            elif str(event.widget) == '.!ctkframe2.!ctktextbox.!text':
+                self.context_menu.post(event.x_root, event.y_root)
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
 
@@ -538,6 +590,7 @@ class ChatApp(ctk.CTk):
 
     def copy_text(self, event=None):
         try:
+            self.chat_history.configure(state="normal")  # Включаем редактирование
             # Проверяем, есть ли выделенный текст в chat_history
             if self.chat_history.tag_ranges("sel"):
                 selected_text = self.chat_history.get("sel.first", "sel.last")
@@ -548,6 +601,7 @@ class ChatApp(ctk.CTk):
                 selected_text = self.input_entry.get("sel.first", "sel.last")
                 self.clipboard_clear()
                 self.clipboard_append(selected_text)
+            self.chat_history.configure(state="disabled")  # Возвращаем в состояние "disabled"
             return "break"
         except Exception as e:
             messagebox.showerror("Возникла ошибка", str(e))
@@ -577,6 +631,12 @@ class ChatApp(ctk.CTk):
             self.lang_button.configure(text="English")
             self.history_checkbox.configure(text="Вести историю")
             self.exit_button.configure(text="Выход")
+            self.context_menu.add_command(label="Копировать", command=self.copy_text)
+            self.context_menu.add_command(label="Выделить всё", command=self.select_all)
+            self.context_menu.add_command(label="Вставить", command=self.paste_text)
+            self.context_menu.add_command(label="Отменить действие", command=self.undo_input)
+            self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
+            self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -586,10 +646,14 @@ class ChatApp(ctk.CTk):
             self.lang_button.configure(text="Русский")
             self.history_checkbox.configure(text="Keep history")
             self.exit_button.configure(text="Exit")
+            self.context_menu.add_command(label="Copy", command=self.copy_text)
+            self.context_menu.add_command(label="Select All", command=self.select_all)
+            self.context_menu.add_command(label="Paste", command=self.paste_text)
+            self.context_menu.add_command(label="Undo", command=self.undo_input)
+            self.chat_history_context_menu.add_command(label="Copy", command=self.copy_text)
+            self.chat_history_context_menu.add_command(label="Select All", command=self.select_all)
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
-
-
 
 if __name__ == "__main__":
     check_for_updates()
