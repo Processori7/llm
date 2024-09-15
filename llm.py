@@ -10,7 +10,7 @@ import customtkinter as ctk
 import tkinter as tk
 import pystray
 import ctypes
-from webscout import KOBOLDAI, BLACKBOXAI, ThinkAnyAI, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -19,7 +19,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.27"
+CURRENT_VERSION = "1.28"
 
 prompt = """###INSTRUCTIONS###
 
@@ -93,7 +93,19 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
 
-def communicate_with_RUBIKSAI(user_input, model):
+def communicate_with_Bing(user_input, model):
+    ai = Bing()
+    ai.model = model
+    response = ai.chat(user_input)
+    return response
+
+def communicate_with_DiscordRocks(user_input, model):
+    ai = DiscordRocks()
+    ai.model = model
+    response = ai.chat(user_input)
+    return response
+
+def communicate_with_RubiksAi(user_input, model):
     ai = RUBIKSAI()
     ai.model = model
     response = ai.chat(user_input)
@@ -142,14 +154,6 @@ def communicate_with_BlackboxAI(user_input):
     except Exception as e:
         return f"Ошибка при общении с BLACKBOXAI: {e}"
 
-def communicate_with_ThinkAnyAI(user_input, model):
-    try:
-        opengpt = ThinkAnyAI(locale="ru", model=model, max_tokens=1500)
-        response = opengpt.chat(user_input)
-        return response
-    except Exception as e:
-        return f"Ошибка при общении с ThinkAnyAI: {e}"
-
 def communicate_with_Phind(user_input):
     try:
         ph = PhindSearch()
@@ -172,29 +176,82 @@ def communicate_with_DeepInfra(user_input, model):
 
 model_functions = {
                 "GPT-4o-mini(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
-                "GPT-4o-mini": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gpt-4o-mini"),
+                "Bing(Balanced)": lambda user_input: communicate_with_Bing(user_input, "Balanced"),
+                "Bing(Creative)": lambda user_input: communicate_with_Bing(user_input, "Creative"),
+                "Bing(Precise)": lambda user_input: communicate_with_Bing(user_input, "Precise"),
                 "GPT-4o": lambda user_input: communicate_with_Julius(user_input),
                 "gpt-4o(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
-                "gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RUBIKSAI(user_input, "gpt-4o-mini"),
+                "gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RubiksAi(user_input, "gpt-4o-mini"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
-                "Claude-3-haiku(ThinkAny)": lambda user_input: communicate_with_ThinkAnyAI(user_input, "claude-3-haiku"),
                 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
                 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
-                "Qwen2-72B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
+                "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
+                "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
+                "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
+                "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
+                "Claude-3-5-sonnet-20240620": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
+                "Claude-3-opus-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
+                "Gpt-4": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4"),
+                "Gpt-4-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-0613"),
+                "Gpt-4-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
+                "Gpt-4o-mini-2024-07-18": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
+                "Gpt-3.5-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
+                "Gpt-3.5-turbo-0125": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
+                "Gpt-3.5-turbo-1106": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
+                "Gpt-3.5-turbo-16k": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k"),
+                "Gpt-3.5-turbo-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0613"),
+                "Gpt-3.5-turbo-16k-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k-0613"),
+                "Llama-3-70b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat"),
+                "Llama-3-70b-chat-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-turbo"),
+                "Llama-3-8b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat"),
+                "Llama-3-8b-chat-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-turbo"),
+                "Llama-3-70b-chat-lite": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-lite"),
+                "Llama-3-8b-chat-lite": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-lite"),
+                "Llama-2-13b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-2-13b-chat"),
+                "Llama-3.1-405b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-405b-turbo"),
+                "Llama-3.1-70b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-70b-turbo"),
+                "Llama-3.1-8b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-8b-turbo"),
+                "LlamaGuard-2-8b": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),
+                "Llama-Guard-7b": lambda user_input: communicate_with_DiscordRocks(user_input, "Llama-Guard-7b"),
+                "Meta-Llama-Guard-3-8B": lambda user_input: communicate_with_DiscordRocks(user_input, "Meta-Llama-Guard-3-8B"),
+                "Mixtral-8x7B-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-v0.1"),
+                "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-Instruct-v0.1"),
+                "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x22B-Instruct-v0.1"),
+                "Mistral-7B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.1"),
+                "Mistral-7B-Instruct-v0.2": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.2"),
+                "Mistral-7B-Instruct-v0.3": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.3"),
+                "Qwen1.5-72B-Chat": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-72B-Chat"),
+                "Qwen1.5-110B-Chat": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-110B-Chat"),
+                "Qwen2-72B-Instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen2-72B-Instruct"),
+                "Gemma-2b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2b-it"),
+                "Dbrx-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "dbrx-instruct"),
+                "Deepseek-coder-33b-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-coder-33b-instruct"),
+                "Deepseek-llm-67b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-llm-67b-chat"),
+                "Nous-Hermes-2-Mixtral-8x7B-DPO": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Mixtral-8x7B-DPO"),
+                "Nous-Hermes-2-Yi-34B": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Yi-34B"),
+                "WizardLM-2-8x22B": lambda user_input: communicate_with_DiscordRocks(user_input, "WizardLM-2-8x22B"),
+                "CodeLlama-7b-Python": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-7b-Python"),
+                "Snowflake-arctic-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "snowflake-arctic-instruct"),
+                "Solar-10.7B-Instruct-v1.0": lambda user_input: communicate_with_DiscordRocks(user_input, "SOLAR-10.7B-Instruct-v1.0"),
+                "Stripedhyena-nous-7B": lambda user_input: communicate_with_DiscordRocks(user_input, "StripedHyena-Nous-7B"),
+                "CodeLlama-13b-Instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-13b-Instruct"),
+                "Mythomax-L2-13b": lambda user_input: communicate_with_DiscordRocks(user_input, "MythoMax-L2-13b"),
+                "Gemma-2-9b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-9b-it"),
+                "Gemma-2-27b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-27b-it"),
+                "Gemini-1.5-flash": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-flash"),
+                "Gemini-1.5-pro": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-pro"),
+                "Sparkdesk": lambda user_input: communicate_with_DiscordRocks(user_input, "sparkdesk"),
+                "Cosmosrp": lambda user_input: communicate_with_DiscordRocks(user_input, "cosmosrp"),
                 "Reflection-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "mattshumer/Reflection-Llama-3.1-70B"),
                 "Llama 3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
-                "Llama-3.1-8B-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"llama-3.1-8b-instruct"),
                 "Llama-3.1-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
                 "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
                 "Meta-Llama-3.1-405B": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
-                "Gemini-pro": lambda user_input: communicate_with_ThinkAnyAI(user_input, "gemini-pro"),
-                "Gemma-2-27b-it": lambda user_input: communicate_with_ThinkAnyAI(user_input, "google/gemma-2-27b-it"),
-                "Mistral-7b-instruct": lambda user_input: communicate_with_ThinkAnyAI(user_input,"mistral-7b-instruct"),
                 "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
                 "Mixtral-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
-                "WizardLM-2-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
+                "WizardLM-2-8x22B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
                 "Mixtral-8x7B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
                 "Dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
                 "Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
@@ -210,6 +267,7 @@ model_functions = {
                 "Openjourney_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "prompthero/openjourney"),
                 "Sdxl_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stability-ai/sdxl"),
                 "Custom-diffusion_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "uwulewd/custom-diffusion"),
+                "BlackboxAIImager_img":lambda user_input: communicate_with_BlackboxAIImager(user_input),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
 
@@ -251,6 +309,25 @@ def gen_img(user_input, model):
     except Exception as e:
        return f"Ошибка при генерации картинки: {e}"
 
+def communicate_with_BlackboxAIImager(user_input):
+    try:
+        bot = BlackboxAIImager()
+        resp = bot.generate(user_input, 1)
+        img_folder = 'img'
+        if not os.path.exists(img_folder):
+            os.makedirs(img_folder)
+        now = datetime.now()
+        image_path = os.path.join(img_folder, f'{user_input}_{now.strftime('%d.%m.%Y_%H.%M.%S')}.png')
+        # Объединяем список байтов в один объект байтов
+        combined_bytes = b''.join(resp)
+
+        with Image.open(BytesIO(combined_bytes)) as img:
+            img.save(image_path)
+
+        return f"Картинка сохранена в: {image_path}"
+
+    except Exception as e:
+       return f"Ошибка при генерации картинки: {e}"
 
 def communicate_with_DeepInfraImager(user_input, model):
     try:
@@ -321,17 +398,34 @@ class ChatApp(ctk.CTk):
             self.input_frame = ctk.CTkFrame(self)
             self.input_frame.pack(fill="x", padx=10, pady=10)
 
-            # Метка
+            # Метка для выбора модели
             self.model_label = ctk.CTkLabel(self.input_frame, text="Выберите модель:", font=("Consolas", 18))
-            self.model_label.pack(side="left", padx=5)
+            self.model_label.pack(side="top", padx=5)
 
-            # Комбобокс
+            # Комбобокс для выбора модели
             self.model_var = tk.StringVar()
             self.model_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.model_var, font=("Consolas", 16),
                                                     values=list(model_functions.keys()))
-            self.model_combobox.pack(side="left", padx=5)
+            self.model_combobox.pack(side="top", padx=5)
             self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
 
+            # Метка для категории
+            self.category_label = ctk.CTkLabel(self.input_frame, text="Выберите категорию:", font=("Consolas", 18))
+            self.category_label.pack(side="top", padx=5)
+
+            # Комбобокс для выбора категории моделей
+            self.category_var = tk.StringVar()
+            self.category_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.category_var,
+                                                       font=("Consolas", 16),
+                                                       values=["All", "Text", "Img", "Photo Analyze"],
+                                                       command=self.update_model_list)
+            self.category_combobox.pack(side="top", padx=5)
+
+            # Установка "All" как модели по умолчанию
+            self.category_combobox.set("All")
+
+            # Обновление списка моделей при инициализации
+            self.update_model_list("All")
 
             self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", 16), height=200, width=180, wrap="word", text_color="orange")
             self.input_entry.edit_undo()
@@ -405,6 +499,23 @@ class ChatApp(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def update_model_list(self, category):
+        # Фильтрация моделей в зависимости от выбранной категории
+        filtered_models = []
+        for model in model_functions.keys():
+            if category == "All":
+                filtered_models.append(model)
+            elif category == "Text" and not model.endswith("_img"):
+                filtered_models.append(model)
+            elif category == "Img" and model.endswith("_img"):
+                filtered_models.append(model)
+            elif category == "Photo Analyze" and "(Photo Analyze)" in model:
+                filtered_models.append(model)
+
+        # Обновление комбобокса с моделями
+        self.model_combobox.configure(values=filtered_models)
+        self.model_combobox.set(filtered_models[0] if filtered_models else "")
 
     def set_active_widget(self, event):
         # Устанавливаем активный виджет
@@ -625,6 +736,7 @@ class ChatApp(ctk.CTk):
         if self.isTranslate:
             # Переключаем на русский
             self.model_label.configure(text="Выберите модель:")
+            self.category_label.configure(text="Выберите категорию:")
             self.send_button.configure(text="Отправить")
             self.clear_button.configure(text="Очистить чат")
             self.theme_button.configure(text="Светлая тема")
@@ -640,6 +752,7 @@ class ChatApp(ctk.CTk):
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
+            self.category_label.configure(text="Select category:")
             self.send_button.configure(text="Send")
             self.clear_button.configure(text="Clear chat")
             self.theme_button.configure(text="Light theme")
