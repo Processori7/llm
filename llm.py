@@ -10,7 +10,7 @@ import customtkinter as ctk
 import tkinter as tk
 import pystray
 import ctypes
-from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -19,7 +19,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.28"
+CURRENT_VERSION = "1.29"
 
 prompt = """###INSTRUCTIONS###
 
@@ -258,15 +258,32 @@ model_functions = {
                 "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "MiniCPM-Llama3-V-2_5(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
-                "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
-                "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
-                "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
-                "Stable-diffusion-v1-5_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "runwayml/stable-diffusion-v1-5"),
-                "Stable-diffusion-v1-4_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "CompVis/stable-diffusion-v1-4"),
-                "Deliberate_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "XpucT/Deliberate"),
-                "Openjourney_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "prompthero/openjourney"),
-                "Sdxl_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stability-ai/sdxl"),
-                "Custom-diffusion_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "uwulewd/custom-diffusion"),
+                "Emi_img":lambda user_input: communicate_with_NexraImager(user_input, "emi"),
+                "Stablediffusion-1.5_img":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-1.5"),
+                "Stablediffusion-2.1_img":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-2.1"),
+                "Sdxl-lora_img":lambda user_input: communicate_with_NexraImager(user_input, "sdxl-lora"),
+                "Dalle_img":lambda user_input: communicate_with_NexraImager(user_input, "dalle"),
+                "Dalle2_img":lambda user_input: communicate_with_NexraImager(user_input, "dalle2"),
+                "Dalle-mini_img":lambda user_input: communicate_with_NexraImager(user_input, "dalle-mini"),
+                "DreamshaperXL10_alpha2_img":lambda user_input: communicate_with_NexraImager(user_input, "dreamshaperXL10_alpha2.safetensors [c8afe2ef]"),
+                "DynavisionXL_0411_img":lambda user_input: communicate_with_NexraImager(user_input, "dynavisionXL_0411.safetensors [c39cc051]"),
+                "JuggernautXL_v45_img":lambda user_input: communicate_with_NexraImager(user_input, "juggernautXL_v45.safetensors [e75f5471]"),
+                "RealismEngineSDXL_v10_img":lambda user_input: communicate_with_NexraImager(user_input, "realismEngineSDXL_v10.safetensors [af771c3f]"),
+                "Sd_xl_base_1.0_img":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0.safetensors [be9edd61]"),
+                "AnimagineXLV3_v30_img":lambda user_input: communicate_with_NexraImager(user_input, "animagineXLV3_v30.safetensors [75f2f05b]"),
+                "Sd_xl_base_1.0_inpainting_0.1_img":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0_inpainting_0.1.safetensors [5679a81a]"),
+                "TurbovisionXL_v431_img":lambda user_input: communicate_with_NexraImager(user_input, "turbovisionXL_v431.safetensors [78890989]"),
+                "Devlishphotorealism_sdxl15_img":lambda user_input: communicate_with_NexraImager(user_input, "devlishphotorealism_sdxl15.safetensors [77cba69f]"),
+                "RealvisxlV40_img":lambda user_input: communicate_with_NexraImager(user_input, "realvisxlV40.safetensors [f7fdcb51]"),
+                # "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
+                # "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
+                # "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
+                # "Stable-diffusion-v1-5_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "runwayml/stable-diffusion-v1-5"),
+                # "Stable-diffusion-v1-4_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "CompVis/stable-diffusion-v1-4"),
+                # "Deliberate_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "XpucT/Deliberate"),
+                # "Openjourney_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "prompthero/openjourney"),
+                # "Sdxl_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stability-ai/sdxl"),
+                # "Custom-diffusion_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "uwulewd/custom-diffusion"),
                 "BlackboxAIImager_img":lambda user_input: communicate_with_BlackboxAIImager(user_input),
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
@@ -358,6 +375,35 @@ def communicate_with_DeepInfraImager(user_input, model):
     except Exception as e:
         return f"Ошибка при генерации картинки: {e}"
 
+def communicate_with_NexraImager(user_input, model):
+    try:
+        ai = NexraImager()
+        ai.model = model
+        resp = ai.generate(user_input, model)
+
+        # Проверяем, что resp - это список изображений
+        if isinstance(resp, list) and len(resp) > 0:
+            num_images = len(resp)  # Количество изображений
+        else:
+            raise ValueError("Генерация изображения не удалась, получен пустой ответ.")
+
+        img_folder = 'img'
+        if not os.path.exists(img_folder):
+            os.makedirs(img_folder)
+
+        now = datetime.now()
+        saved_images = []  # Список для хранения путей сохраненных изображений
+
+        for i, image_data in enumerate(resp):
+            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
+            with Image.open(BytesIO(image_data)) as img:
+                img.save(image_path)
+                saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
+
+        return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
+    except Exception as e:
+        return f"Ошибка при генерации картинки: {e}"
+
 class ChatApp(ctk.CTk):
     def __init__(self):
         try:
@@ -400,26 +446,30 @@ class ChatApp(ctk.CTk):
 
             # Метка для выбора модели
             self.model_label = ctk.CTkLabel(self.input_frame, text="Выберите модель:", font=("Consolas", 18))
-            self.model_label.pack(side="top", padx=5)
+            self.model_label.pack(side="left", padx=5)
 
             # Комбобокс для выбора модели
             self.model_var = tk.StringVar()
             self.model_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.model_var, font=("Consolas", 16),
                                                     values=list(model_functions.keys()))
-            self.model_combobox.pack(side="top", padx=5)
+            self.model_combobox.pack(side="left", padx=5)
             self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
 
+            # Создаем новый фрейм для выбора категории
+            self.category_frame = ctk.CTkFrame(self.input_frame)
+            self.category_frame.pack(side="top", padx=6)  # Устанавливаем фрейм ниже
+
             # Метка для категории
-            self.category_label = ctk.CTkLabel(self.input_frame, text="Выберите категорию:", font=("Consolas", 18))
-            self.category_label.pack(side="top", padx=5)
+            self.category_label = ctk.CTkLabel(self.category_frame, text="Выберите категорию:", font=("Consolas", 18))
+            self.category_label.pack(side="left", padx=6)
 
             # Комбобокс для выбора категории моделей
             self.category_var = tk.StringVar()
-            self.category_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.category_var,
+            self.category_combobox = ctk.CTkOptionMenu(self.category_frame, variable=self.category_var,
                                                        font=("Consolas", 16),
                                                        values=["All", "Text", "Img", "Photo Analyze"],
                                                        command=self.update_model_list)
-            self.category_combobox.pack(side="top", padx=5)
+            self.category_combobox.pack(side="left", padx=6)
 
             # Установка "All" как модели по умолчанию
             self.category_combobox.set("All")
@@ -547,10 +597,13 @@ class ChatApp(ctk.CTk):
 
                 if model in model_functions:
                     self.chat_history.configure(state="normal")  # Включаем редактирование
-                    self.chat_history.insert(tk.END, f"Вы: {user_input}\n", "user_input")
-
                     response = model_functions[model](user_input)
-                    self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n", "response")
+                    if not self.isTranslate:
+                        self.chat_history.insert(tk.END, f"Вы: {user_input}\n", "user_input")
+                        self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n", "response")
+                    else:
+                        self.chat_history.insert(tk.END, f"You: {user_input}\n", "user_input")
+                        self.chat_history.insert(tk.END, f"\nAnswer from {model}: {response}\n", "response")
 
                     # Получаем ширину виджета chat_history
                     chat_width = self.chat_history.winfo_width()
@@ -765,7 +818,6 @@ class ChatApp(ctk.CTk):
             self.context_menu.add_command(label="Undo", command=self.undo_input)
             self.chat_history_context_menu.add_command(label="Copy", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Select All", command=self.select_all)
-
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
 if __name__ == "__main__":
