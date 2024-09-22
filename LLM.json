@@ -1,0 +1,209 @@
+{
+ "version": "auto-py-to-exe-configuration_v1",
+ "pyinstallerOptions": [
+  {
+   "optionDest": "noconfirm",
+   "value": true
+  },
+  {
+   "optionDest": "filenames",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/llm.py"
+  },
+  {
+   "optionDest": "onefile",
+   "value": true
+  },
+  {
+   "optionDest": "console",
+   "value": false
+  },
+  {
+   "optionDest": "icon_file",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/icon.ico"
+  },
+  {
+   "optionDest": "clean_build",
+   "value": false
+  },
+  {
+   "optionDest": "strip",
+   "value": false
+  },
+  {
+   "optionDest": "noupx",
+   "value": false
+  },
+  {
+   "optionDest": "disable_windowed_traceback",
+   "value": false
+  },
+  {
+   "optionDest": "uac_admin",
+   "value": false
+  },
+  {
+   "optionDest": "uac_uiaccess",
+   "value": false
+  },
+  {
+   "optionDest": "argv_emulation",
+   "value": false
+  },
+  {
+   "optionDest": "bootloader_ignore_signals",
+   "value": false
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/keyboard;keyboard/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/ollama;ollama/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/webscout;webscout/"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "pyreqwest_impersonate"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "bs4"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "tldextract"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "tiktoken"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "markdownify"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "termcolor"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "rich"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "tqdm"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "click"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "appdirs"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "g4f"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "playsound"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "Helpingai_T2"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "httpx"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "Bard"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "poe_api_wrapper"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/requests_html.py;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pyppeteer;pyppeteer/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pyee;pyee/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pyquery;pyquery/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/cssselect;cssselect/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/fake_useragent;fake_useragent/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/customtkinter;customtkinter/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/huggingface_hub;huggingface_hub/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pystray;pystray/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/icon.ico;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pygame;pygame/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/tls_client;tls_client/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/google;google/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/googleapiclient;googleapiclient/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pytesseract;pytesseract/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/opencv_python-4.10.0.84.dist-info;opencv_python-4.10.0.84.dist-info/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Program Files/Tesseract-OCR/tessdata;tessdata/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Program Files/Tesseract-OCR/tesseract.exe;."
+  }
+ ],
+ "nonPyinstallerOptions": {
+  "increaseRecursionLimit": true,
+  "manualArguments": ""
+ }
+}

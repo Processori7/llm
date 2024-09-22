@@ -12,6 +12,7 @@ import tkinter as tk
 import pystray
 import ctypes
 import cv2
+import traceback
 from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
@@ -19,7 +20,6 @@ from tkinter import messagebox, filedialog
 from PIL import Image
 from io import BytesIO
 from packaging import version
-from tkinter.filedialog import askopenfile
 
 
 CURRENT_VERSION = "1.30"
@@ -414,7 +414,7 @@ class ChatApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
 
-            pytesseract.pytesseract.tesseract_cmd = r'.\tesseract.exe'
+            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
             self.isTranslate = False
 
@@ -586,7 +586,12 @@ class ChatApp(ctk.CTk):
             else:
                 messagebox.showerror("Внимание!", "Картинка не выбрана!")
         except Exception as e:
-            messagebox.showerror("Возникла ошибка при распознавании текста", e)
+            # Получаем информацию об ошибке
+            error_message = f"Возникла ошибка при распознавании текста:\n{str(e)}\n\n"
+            error_message += "Трассировка стека:\n" + traceback.format_exc()
+
+            # Показываем сообщение об ошибке
+            messagebox.showerror("Ошибка", error_message)
 
     def update_model_list(self, category):
         # Фильтрация моделей в зависимости от выбранной категории
