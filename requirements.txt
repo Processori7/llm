@@ -11,3 +11,6 @@ pygame
 google-api-python-client
 google-generativeai
 lxml[html_clean]
+opencv-python
+numpy
+pytesseract

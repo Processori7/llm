@@ -1,4 +1,5 @@
 import os
+import pytesseract
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import re
@@ -10,6 +11,7 @@ import customtkinter as ctk
 import tkinter as tk
 import pystray
 import ctypes
+import cv2
 from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
@@ -17,9 +19,10 @@ from tkinter import messagebox, filedialog
 from PIL import Image
 from io import BytesIO
 from packaging import version
+from tkinter.filedialog import askopenfile
 
 
-CURRENT_VERSION = "1.29"
+CURRENT_VERSION = "1.30"
 
 prompt = """###INSTRUCTIONS###
 
@@ -411,6 +414,8 @@ class ChatApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
 
+            pytesseract.pytesseract.tesseract_cmd = r'.\tesseract.exe'
+
             self.isTranslate = False
 
             self.title("AI Chat")
@@ -520,6 +525,11 @@ class ChatApp(ctk.CTk):
                                              font=("Consolas", 14), text_color="white")
             self.lang_button.pack(side="top", padx=5, pady=10)
 
+            # Кнопка переключения языка
+            self.ing_reco_button = ctk.CTkButton(self.button_frame, text="Распознать текст", command=self.recognize_text,
+                                             font=("Consolas", 14), text_color="white")
+            self.ing_reco_button.pack(side="top", padx=5, pady=10)
+
             # Кнопка закрытия программы
             self.exit_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
                                              font=("Consolas", 14), text_color="white")
@@ -549,6 +559,34 @@ class ChatApp(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def recognize_text(self):
+        try:
+            image_path = filedialog.askopenfilename(title="Выберите изображение",
+                                                    filetypes=(("Изображения", "*.jpg;*.png;*.gif"),
+                                                               ("Все файлы", "*.*")))
+            if image_path:
+                # Загрузка изображения
+                image = cv2.imread(image_path)
+
+                # Преобразование изображения в оттенки серого
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+                # Применение порогового значения для выделения текста
+                _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+                # Использование pytesseract для распознавания текста
+                recognized_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+
+                if recognized_text:
+                    self.input_entry.delete("1.0", tk.END)
+                    self.input_entry.insert("1.0", recognized_text)
+                else:
+                    messagebox.showinfo("Результат", "Текст не распознан.")
+            else:
+                messagebox.showerror("Внимание!", "Картинка не выбрана!")
+        except Exception as e:
+            messagebox.showerror("Возникла ошибка при распознавании текста", e)
 
     def update_model_list(self, category):
         # Фильтрация моделей в зависимости от выбранной категории
@@ -802,6 +840,7 @@ class ChatApp(ctk.CTk):
             self.context_menu.add_command(label="Отменить действие", command=self.undo_input)
             self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
+            self.ing_reco_button.configure(text="Распознать текст с картинки")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -818,6 +857,7 @@ class ChatApp(ctk.CTk):
             self.context_menu.add_command(label="Undo", command=self.undo_input)
             self.chat_history_context_menu.add_command(label="Copy", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Select All", command=self.select_all)
+            self.ing_reco_button.configure(text="Recognize text")
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
 if __name__ == "__main__":
