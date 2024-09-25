@@ -13,7 +13,7 @@ import pystray
 import ctypes
 import cv2
 import traceback
-from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -22,7 +22,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.30"
+CURRENT_VERSION = "1.31"
 
 prompt = """###INSTRUCTIONS###
 
@@ -96,39 +96,66 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
 
+def communicate_with_ChatGPTES(user_input, model):
+    try:
+        ai = ChatGPTES()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с ChatGPTES: {e}"
+
 def communicate_with_Bing(user_input, model):
-    ai = Bing()
-    ai.model = model
-    response = ai.chat(user_input)
-    return response
+    try:
+        ai = Bing()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с Bing: {e}"
 
 def communicate_with_DiscordRocks(user_input, model):
-    ai = DiscordRocks()
-    ai.model = model
-    response = ai.chat(user_input)
-    return response
+    try:
+        ai = DiscordRocks()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с DiscordRocks: {e}"
 
 def communicate_with_RubiksAi(user_input, model):
-    ai = RUBIKSAI()
-    ai.model = model
-    response = ai.chat(user_input)
-    return response
+    try:
+        ai = RUBIKSAI()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с RubiksAi: {e}"
 
 def communicate_with_DarkAi(user_input, model):
-    ai = DARKAI()
-    ai.model = model
-    response = ai.chat(user_input)
-    return response
+    try:
+        ai = DARKAI()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с DarkAi: {e}"
 
 def communicate_with_DuckDuckGO(user_input, model):
-    response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
-    return response
+    try:
+        response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с DuckDuckGo: {e}"
 
 def communicate_with_Julius(user_input):
-    ai = Julius()
-    ai.model = "GPT-4o"
-    response = ai.chat(user_input)
-    return response
+    try:
+        ai = Julius()
+        ai.model = "GPT-4o"
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с Julius: {e}"
 
 def communicate_with_KoboldAI(user_input):
     try:
@@ -185,6 +212,13 @@ model_functions = {
                 "GPT-4o": lambda user_input: communicate_with_Julius(user_input),
                 "gpt-4o(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
                 "gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RubiksAi(user_input, "gpt-4o-mini"),
+                "Gpt-4": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4"),
+                "Gpt-4-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-0613"),
+                "Gpt-4-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
+                "Gpt-4o-mini-2024-07-18": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
+                "gpt-4o": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o"),
+                "gpt-4o-mini": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o-mini"),
+                "chatgpt-4o-latest": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
@@ -196,10 +230,6 @@ model_functions = {
                 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
                 "Claude-3-5-sonnet-20240620": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
                 "Claude-3-opus-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
-                "Gpt-4": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4"),
-                "Gpt-4-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-0613"),
-                "Gpt-4-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
-                "Gpt-4o-mini-2024-07-18": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
                 "Gpt-3.5-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
                 "Gpt-3.5-turbo-0125": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
                 "Gpt-3.5-turbo-1106": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
@@ -414,7 +444,7 @@ class ChatApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
 
-            pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+            pytesseract.pytesseract.tesseract_cmd = 'tesseract.exe'
 
             self.isTranslate = False
 
@@ -569,6 +599,10 @@ class ChatApp(ctk.CTk):
                 # Загрузка изображения
                 image = cv2.imread(image_path)
 
+                # Проверка, было ли изображение загружено успешно
+                if image is None:
+                    messagebox.showerror("Ошибка!","Не удалось загрузить изображение. Проверьте название файла. Назовите его например 2.png")
+
                 # Преобразование изображения в оттенки серого
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -589,7 +623,6 @@ class ChatApp(ctk.CTk):
             # Получаем информацию об ошибке
             error_message = f"Возникла ошибка при распознавании текста:\n{str(e)}\n\n"
             error_message += "Трассировка стека:\n" + traceback.format_exc()
-
             # Показываем сообщение об ошибке
             messagebox.showerror("Ошибка", error_message)
 
@@ -845,7 +878,7 @@ class ChatApp(ctk.CTk):
             self.context_menu.add_command(label="Отменить действие", command=self.undo_input)
             self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
-            self.ing_reco_button.configure(text="Распознать текст с картинки")
+            self.ing_reco_button.configure(text="Распознать текст")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")

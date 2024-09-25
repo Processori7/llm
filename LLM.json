@@ -192,14 +192,6 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/opencv_python-4.10.0.84.dist-info;opencv_python-4.10.0.84.dist-info/"
-  },
-  {
-   "optionDest": "datas",
-   "value": "C:/Program Files/Tesseract-OCR/tessdata;tessdata/"
-  },
-  {
-   "optionDest": "datas",
-   "value": "C:/Program Files/Tesseract-OCR/tesseract.exe;."
   }
  ],
  "nonPyinstallerOptions": {
