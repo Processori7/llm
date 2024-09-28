@@ -13,7 +13,7 @@ import pystray
 import ctypes
 import cv2
 import traceback
-from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -22,8 +22,8 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.31"
-
+CURRENT_VERSION = "1.32"
+PORT = 8000  # Порт, на котором будет работать сервер
 prompt = """###INSTRUCTIONS###
 
 You MUST follow the instructions for answering:
@@ -95,6 +95,24 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
+
+def communicate_with_Prefind(user_input, model):
+    try:
+        ai = PrefindAI()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с ChatGPTES: {e}"
+
+def communicate_with_Amigo(user_input, model):
+    try:
+        ai = AmigoChat()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"Ошибка при общении с ChatGPTES: {e}"
 
 def communicate_with_ChatGPTES(user_input, model):
     try:
@@ -219,6 +237,8 @@ model_functions = {
                 "gpt-4o": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o"),
                 "gpt-4o-mini": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o-mini"),
                 "chatgpt-4o-latest": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
+                "Gpt-4o1-mini": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
+                "Gpt-4o1-preview": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
                 "KoboldAI": communicate_with_KoboldAI,
                 "BlackboxAI": communicate_with_BlackboxAI,
                 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
@@ -228,8 +248,10 @@ model_functions = {
                 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
                 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
                 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
+                "Claude-3-sonnet": lambda user_input: communicate_with_Amigo(user_input, "claude-3-sonnet-20240229"),
                 "Claude-3-5-sonnet-20240620": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
                 "Claude-3-opus-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
+                "Claude-3": lambda user_input: communicate_with_Prefind(user_input, "claude"),
                 "Gpt-3.5-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
                 "Gpt-3.5-turbo-0125": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
                 "Gpt-3.5-turbo-1106": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
@@ -244,11 +266,13 @@ model_functions = {
                 "Llama-3-8b-chat-lite": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-lite"),
                 "Llama-2-13b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-2-13b-chat"),
                 "Llama-3.1-405b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-405b-turbo"),
+                "Llama-3.1-405B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"),
                 "Llama-3.1-70b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-70b-turbo"),
                 "Llama-3.1-8b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-8b-turbo"),
                 "LlamaGuard-2-8b": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),
                 "Llama-Guard-7b": lambda user_input: communicate_with_DiscordRocks(user_input, "Llama-Guard-7b"),
                 "Meta-Llama-Guard-3-8B": lambda user_input: communicate_with_DiscordRocks(user_input, "Meta-Llama-Guard-3-8B"),
+                "Llama-3": lambda user_input: communicate_with_Prefind(user_input, "llama"),
                 "Mixtral-8x7B-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-v0.1"),
                 "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-Instruct-v0.1"),
                 "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x22B-Instruct-v0.1"),
@@ -275,6 +299,8 @@ model_functions = {
                 "Gemma-2-27b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-27b-it"),
                 "Gemini-1.5-flash": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-flash"),
                 "Gemini-1.5-pro": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-pro"),
+                "Gemini-1.5-pro(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "gemini-1.5-pro"),
+                "Gemini-1-5-flash(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "gemini-1-5-flash"),
                 "Sparkdesk": lambda user_input: communicate_with_DiscordRocks(user_input, "sparkdesk"),
                 "Cosmosrp": lambda user_input: communicate_with_DiscordRocks(user_input, "cosmosrp"),
                 "Reflection-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "mattshumer/Reflection-Llama-3.1-70B"),
@@ -308,6 +334,9 @@ model_functions = {
                 "TurbovisionXL_v431_img":lambda user_input: communicate_with_NexraImager(user_input, "turbovisionXL_v431.safetensors [78890989]"),
                 "Devlishphotorealism_sdxl15_img":lambda user_input: communicate_with_NexraImager(user_input, "devlishphotorealism_sdxl15.safetensors [77cba69f]"),
                 "RealvisxlV40_img":lambda user_input: communicate_with_NexraImager(user_input, "realvisxlV40.safetensors [f7fdcb51]"),
+                "Dalle-e-3_img":lambda user_input: communicate_with_AmigoImager(user_input, "dalle-e-3"),
+                "Flux-pro_img":lambda user_input: communicate_with_AmigoImager(user_input, "flux-pro"),
+                "Flux-realism_img":lambda user_input: communicate_with_AmigoImager(user_input, "flux-realism"),
                 # "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
                 # "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
                 # "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
@@ -411,6 +440,35 @@ def communicate_with_DeepInfraImager(user_input, model):
 def communicate_with_NexraImager(user_input, model):
     try:
         ai = NexraImager()
+        ai.model = model
+        resp = ai.generate(user_input, model)
+
+        # Проверяем, что resp - это список изображений
+        if isinstance(resp, list) and len(resp) > 0:
+            num_images = len(resp)  # Количество изображений
+        else:
+            raise ValueError("Генерация изображения не удалась, получен пустой ответ.")
+
+        img_folder = 'img'
+        if not os.path.exists(img_folder):
+            os.makedirs(img_folder)
+
+        now = datetime.now()
+        saved_images = []  # Список для хранения путей сохраненных изображений
+
+        for i, image_data in enumerate(resp):
+            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
+            with Image.open(BytesIO(image_data)) as img:
+                img.save(image_path)
+                saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
+
+        return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
+    except Exception as e:
+        return f"Ошибка при генерации картинки: {e}"
+
+def communicate_with_AmigoImager(user_input, model):
+    try:
+        ai = AmigoImager()
         ai.model = model
         resp = ai.generate(user_input, model)
 

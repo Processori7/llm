@@ -14,3 +14,9 @@ lxml[html_clean]
 opencv-python
 numpy
 pytesseract
+lxml_html_clean
+psutil
+colorlog
+yaspin
+keyboard
+gradio_client
