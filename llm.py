@@ -23,7 +23,6 @@ from packaging import version
 
 
 CURRENT_VERSION = "1.32"
-PORT = 8000  # Порт, на котором будет работать сервер
 prompt = """###INSTRUCTIONS###
 
 You MUST follow the instructions for answering:

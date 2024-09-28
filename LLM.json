@@ -196,6 +196,10 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/darkdetect;darkdetect/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/gradio_client;gradio_client/"
   }
  ],
  "nonPyinstallerOptions": {
