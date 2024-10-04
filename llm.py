@@ -13,7 +13,7 @@ import pystray
 import ctypes
 import cv2
 import traceback
-from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -22,7 +22,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.32"
+CURRENT_VERSION = "1.33"
 prompt = """###INSTRUCTIONS###
 
 You MUST follow the instructions for answering:
@@ -95,6 +95,14 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
             messagebox.showerror("Ошибка при проверке обновлений", e)
 
+def communicate_with_Bagoodex(user_input):
+    try:
+        ai = Bagoodex()
+        response = ai.chat(user_input)
+        return response.encode('latin1').decode('utf-8')
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
 def communicate_with_Prefind(user_input, model):
     try:
         ai = PrefindAI()
@@ -102,7 +110,7 @@ def communicate_with_Prefind(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с ChatGPTES: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Amigo(user_input, model):
     try:
@@ -111,7 +119,7 @@ def communicate_with_Amigo(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с ChatGPTES: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_ChatGPTES(user_input, model):
     try:
@@ -120,7 +128,7 @@ def communicate_with_ChatGPTES(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с ChatGPTES: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Bing(user_input, model):
     try:
@@ -129,7 +137,7 @@ def communicate_with_Bing(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с Bing: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_DiscordRocks(user_input, model):
     try:
@@ -138,7 +146,7 @@ def communicate_with_DiscordRocks(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с DiscordRocks: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_RubiksAi(user_input, model):
     try:
@@ -147,7 +155,7 @@ def communicate_with_RubiksAi(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с RubiksAi: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_DarkAi(user_input, model):
     try:
@@ -156,14 +164,14 @@ def communicate_with_DarkAi(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с DarkAi: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_DuckDuckGO(user_input, model):
     try:
         response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
         return response
     except Exception as e:
-        return f"Ошибка при общении с DuckDuckGo: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Julius(user_input):
     try:
@@ -172,7 +180,7 @@ def communicate_with_Julius(user_input):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с Julius: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_KoboldAI(user_input):
     try:
@@ -180,7 +188,7 @@ def communicate_with_KoboldAI(user_input):
         response = koboldai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с KoboldAI: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_BlackboxAI(user_input):
     try:
@@ -199,7 +207,7 @@ def communicate_with_BlackboxAI(user_input):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с BLACKBOXAI: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Phind(user_input):
     try:
@@ -207,7 +215,7 @@ def communicate_with_Phind(user_input):
         response = ph.chat(user_input)
         return response
     except Exception as e:
-        return f"Ошибка при общении с PhindAI: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_DeepInfra(user_input, model):
     try:
@@ -219,7 +227,7 @@ def communicate_with_DeepInfra(user_input, model):
         content = response['choices'][0]['message']['content']
         return content
     except Exception as e:
-        return f"Ошибка при общении с DeepInfraAI: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 model_functions = {
                 "GPT-4o-mini(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
@@ -244,6 +252,7 @@ model_functions = {
                 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
                 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
+                "Bagoodex":communicate_with_Bagoodex,
                 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
                 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
                 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
@@ -316,6 +325,7 @@ model_functions = {
                 "L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
                 "Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
                 "MiniCPM-Llama3-V-2_5(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
+                "Llava-1.5-7b-hf(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
                 "Emi_img":lambda user_input: communicate_with_NexraImager(user_input, "emi"),
                 "Stablediffusion-1.5_img":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-1.5"),
                 "Stablediffusion-2.1_img":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-2.1"),
@@ -349,6 +359,30 @@ model_functions = {
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
 
+error_messages = {
+    "ru":"Ошибка получения данных от провайдера, пожалуйста, выберите другого провайдера или модель",
+    "en":"Error receiving data from provider, please select another provider or model"
+}
+
+error_gen_img_messages = {
+    "ru":"Генерация изображения не удалась, получен пустой ответ.",
+    "en":"Image generation failed, blank response received."
+}
+
+save_img_messages = {
+    "ru":"Картинка сохранена в: ",
+    "en":"The picture is saved in: "
+}
+
+def get_save_img_messages(isTranslate):
+    return save_img_messages["ru" if not isTranslate else "en"]
+
+def get_error_message(isTranslate):
+    return error_messages["ru" if not isTranslate else "en"]
+
+def get_error_gen_img_messages(isTranslate):
+    return error_gen_img_messages["ru" if not isTranslate else "en"]
+
 def communicate_with_VLM(user_input, model):
     try:
         image_path =filedialog.askopenfilename(
@@ -368,7 +402,7 @@ def communicate_with_VLM(user_input, model):
             response = vlm_instance.chat(prompt)
             return response
     except Exception as e:
-        return f"Ошибка при общении с DeepInfraAI: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def gen_img(user_input, model):
     try:
@@ -382,10 +416,10 @@ def gen_img(user_input, model):
         with Image.open(BytesIO(resp)) as img:
             img.save(image_path)
 
-        return f"Картинка сохранена в: {image_path}"
+        return f"{get_save_img_messages(app.isTranslate)}{image_path}"
 
     except Exception as e:
-       return f"Ошибка при генерации картинки: {e}"
+       return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_BlackboxAIImager(user_input):
     try:
@@ -402,39 +436,39 @@ def communicate_with_BlackboxAIImager(user_input):
         with Image.open(BytesIO(combined_bytes)) as img:
             img.save(image_path)
 
-        return f"Картинка сохранена в: {image_path}"
+        return f"{get_save_img_messages(app.isTranslate)}{image_path}"
 
     except Exception as e:
-       return f"Ошибка при генерации картинки: {e}"
+       return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_DeepInfraImager(user_input, model):
-    try:
-        ai = DeepInfraImager()
-        ai.model = model
-        resp = ai.generate(user_input, 1)
-
-        # Проверяем, что resp - это список изображений
-        if isinstance(resp, list) and len(resp) > 0:
-            num_images = len(resp)  # Количество изображений
-        else:
-            raise ValueError("Генерация изображения не удалась, получен пустой ответ.")
-
-        img_folder = 'img'
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-
-        now = datetime.now()
-        saved_images = []  # Список для хранения путей сохраненных изображений
-
-        for i, image_data in enumerate(resp):
-            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
-            with Image.open(BytesIO(image_data)) as img:
-                img.save(image_path)
-                saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
-
-        return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
-    except Exception as e:
-        return f"Ошибка при генерации картинки: {e}"
+# def communicate_with_DeepInfraImager(user_input, model):
+#     try:
+#         ai = DeepInfraImager()
+#         ai.model = model
+#         resp = ai.generate(user_input, 1)
+#
+#         # Проверяем, что resp - это список изображений
+#         if isinstance(resp, list) and len(resp) > 0:
+#             num_images = len(resp)  # Количество изображений
+#         else:
+#             raise ValueError(get_error_gen_img_messages(app.isTranslate))
+#
+#         img_folder = 'img'
+#         if not os.path.exists(img_folder):
+#             os.makedirs(img_folder)
+#
+#         now = datetime.now()
+#         saved_images = []  # Список для хранения путей сохраненных изображений
+#
+#         for i, image_data in enumerate(resp):
+#             image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
+#             with Image.open(BytesIO(image_data)) as img:
+#                 img.save(image_path)
+#                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
+#
+#         return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
+#     except Exception as e:
+#         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_NexraImager(user_input, model):
     try:
@@ -446,7 +480,7 @@ def communicate_with_NexraImager(user_input, model):
         if isinstance(resp, list) and len(resp) > 0:
             num_images = len(resp)  # Количество изображений
         else:
-            raise ValueError("Генерация изображения не удалась, получен пустой ответ.")
+            raise ValueError(get_error_gen_img_messages(app.isTranslate)(app.isTranslate))
 
         img_folder = 'img'
         if not os.path.exists(img_folder):
@@ -461,9 +495,9 @@ def communicate_with_NexraImager(user_input, model):
                 img.save(image_path)
                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
 
-        return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
+        return f"{get_save_img_messages(app.isTranslate)}{', '.join(saved_images)}"
     except Exception as e:
-        return f"Ошибка при генерации картинки: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_AmigoImager(user_input, model):
     try:
@@ -475,7 +509,7 @@ def communicate_with_AmigoImager(user_input, model):
         if isinstance(resp, list) and len(resp) > 0:
             num_images = len(resp)  # Количество изображений
         else:
-            raise ValueError("Генерация изображения не удалась, получен пустой ответ.")
+            raise ValueError(get_error_gen_img_messages(app.isTranslate)(app.isTranslate))
 
         img_folder = 'img'
         if not os.path.exists(img_folder):
@@ -492,7 +526,7 @@ def communicate_with_AmigoImager(user_input, model):
 
         return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
     except Exception as e:
-        return f"Ошибка при генерации картинки: {e}"
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 class ChatApp(ctk.CTk):
     def __init__(self):
@@ -565,6 +599,16 @@ class ChatApp(ctk.CTk):
 
             # Установка "All" как модели по умолчанию
             self.category_combobox.set("All")
+
+            self.search_label = ctk.CTkLabel(self.category_frame, text="Поиск модели:", font=("Consolas", 18))
+            self.search_label.pack(side="left", padx=6)
+
+            self.search_var = tk.StringVar()
+            self.search_entry = ctk.CTkEntry(self.category_frame, textvariable=self.search_var, font=("Consolas", 18))
+            self.search_entry.pack(side="left", padx=6)
+
+            # Установка trace для отслеживания изменений в строке поиска
+            self.search_var.trace("w", self.filter_models)
 
             # Обновление списка моделей при инициализации
             self.update_model_list("All")
@@ -646,6 +690,15 @@ class ChatApp(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def filter_models(self, *args):
+        search_term = self.search_var.get().lower()
+        filtered_models = [model for model in model_functions.keys() if search_term in model.lower()]
+        self.model_combobox.configure(values=filtered_models)
+        if filtered_models:
+            self.model_combobox.set(filtered_models[0])  # Установка первой
+        else:
+            self.model_combobox.set("")  # Установка первой найденной модели по умолчанию
 
     def recognize_text(self):
         try:
@@ -936,6 +989,7 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
             self.ing_reco_button.configure(text="Распознать текст")
+            self.search_label.configure(text="Поиск модели:")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -953,6 +1007,8 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu.add_command(label="Copy", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Select All", command=self.select_all)
             self.ing_reco_button.configure(text="Recognize text")
+            self.search_label.configure(text="Model Search:")
+
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
 if __name__ == "__main__":
