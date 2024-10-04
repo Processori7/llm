@@ -13,7 +13,7 @@ import pystray
 import ctypes
 import cv2
 import traceback
-from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager,ChatHub, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -58,6 +58,24 @@ Answer the question in a natural, human-like manner.
 ALWAYS use an answering example for a first message structure.
 """ # Добавление навыков ИИ и другие тонкие настройки
 
+def download_tesserat():
+    try:
+        # Получение информации о последнем релизе на GitHub
+        response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
+        response.raise_for_status()
+        latest_release = response.json()
+
+        # Получение ссылки на файл llm.exe последней версии
+        download_url = None
+        assets = latest_release["assets"]
+        for asset in assets:
+            if asset["name"] == "tesseract.exe":  # Ищем только tesseract.exe
+                download_url = asset["browser_download_url"]
+                break
+        webbrowser.open(download_url)
+    except requests.exceptions.RequestException as e:
+        messagebox.showerror("Tesseract error", str(e))
+
 def update_app(update_url):
    webbrowser.open(update_url)
 
@@ -68,14 +86,16 @@ def check_for_updates():
         response.raise_for_status()
         latest_release = response.json()
 
-        # Получение ссылки на файл exe последней версии
+        # Получение ссылки на файл llm.exe последней версии
+        download_url = None
         assets = latest_release["assets"]
         for asset in assets:
-            if asset["name"].endswith(".exe"):
+            if asset["name"] == "llm.exe":  # Ищем только llm.exe
                 download_url = asset["browser_download_url"]
                 break
-        else:
-            messagebox.showerror("Ошибка обновления", "Не удалось найти файл exe для последней версии.")
+
+        if download_url is None:
+            messagebox.showerror("Ошибка обновления", "Не удалось найти файл llm.exe для последней версии.")
             return
 
         # Сравнение текущей версии с последней версией
@@ -93,7 +113,16 @@ def check_for_updates():
                                       type='yesno') == 'yes':
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
-            messagebox.showerror("Ошибка при проверке обновлений", e)
+        messagebox.showerror(get_update_error_message(app.isTranslate), str(e))
+
+def communicate_with_Chathub(user_input, model):
+    try:
+        ai = ChatHub()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Bagoodex(user_input):
     try:
@@ -253,6 +282,7 @@ model_functions = {
                 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
                 "Phind": communicate_with_Phind,
                 "Bagoodex":communicate_with_Bagoodex,
+                "Sonar-online": lambda user_input: communicate_with_Chathub(user_input, "perplexity/sonar-online"),
                 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
                 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
                 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
@@ -291,6 +321,7 @@ model_functions = {
                 "Qwen1.5-110B-Chat": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-110B-Chat"),
                 "Qwen2-72B-Instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen2-72B-Instruct"),
                 "Gemma-2b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2b-it"),
+                "Gemma-2": lambda user_input: communicate_with_Chathub(user_input, "google/gemma-2"),
                 "Dbrx-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "dbrx-instruct"),
                 "Deepseek-coder-33b-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-coder-33b-instruct"),
                 "Deepseek-llm-67b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-llm-67b-chat"),
@@ -359,9 +390,19 @@ model_functions = {
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
 
+update_error_message = {
+    "ru":"Ошибка при проверке обновлений",
+    "en":"Error checking for updates"
+}
+
 error_messages = {
     "ru":"Ошибка получения данных от провайдера, пожалуйста, выберите другого провайдера или модель",
     "en":"Error receiving data from provider, please select another provider or model"
+}
+
+tesseract_not_found_messages = {
+    "ru":"tesseract.exe не найден, нажмите ок для скачивания и сохраните его в одной директории(папке) с файлом llm.exe",
+    "en":"tesseract.exe not found, click OK to download and save it in the same directory as the llm.exe file"
 }
 
 error_gen_img_messages = {
@@ -373,6 +414,12 @@ save_img_messages = {
     "ru":"Картинка сохранена в: ",
     "en":"The picture is saved in: "
 }
+
+def get_update_error_message(isTranslate):
+    return update_error_message["ru" if not isTranslate else "en"]
+
+def get_tesseract_not_found_messages(isTranslate):
+    return tesseract_not_found_messages["ru" if not isTranslate else "en"]
 
 def get_save_img_messages(isTranslate):
     return save_img_messages["ru" if not isTranslate else "en"]
@@ -480,7 +527,7 @@ def communicate_with_NexraImager(user_input, model):
         if isinstance(resp, list) and len(resp) > 0:
             num_images = len(resp)  # Количество изображений
         else:
-            raise ValueError(get_error_gen_img_messages(app.isTranslate)(app.isTranslate))
+            raise ValueError(get_error_gen_img_messages(app.isTranslate))
 
         img_folder = 'img'
         if not os.path.exists(img_folder):
@@ -509,7 +556,7 @@ def communicate_with_AmigoImager(user_input, model):
         if isinstance(resp, list) and len(resp) > 0:
             num_images = len(resp)  # Количество изображений
         else:
-            raise ValueError(get_error_gen_img_messages(app.isTranslate)(app.isTranslate))
+            raise ValueError(get_error_gen_img_messages(app.isTranslate))
 
         img_folder = 'img'
         if not os.path.exists(img_folder):
@@ -535,7 +582,8 @@ class ChatApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
 
-            pytesseract.pytesseract.tesseract_cmd = 'tesseract.exe'
+            pytesseract.tesseract_cmd = 'tesseract.exe'
+            self.tesseract_cmd = 'tesseract.exe'
 
             self.isTranslate = False
 
@@ -702,33 +750,39 @@ class ChatApp(ctk.CTk):
 
     def recognize_text(self):
         try:
-            image_path = filedialog.askopenfilename(title="Выберите изображение",
-                                                    filetypes=(("Изображения", "*.jpg;*.png;*.gif"),
-                                                               ("Все файлы", "*.*")))
-            if image_path:
-                # Загрузка изображения
-                image = cv2.imread(image_path)
+            if os.path.exists(self.tesseract_cmd):
 
-                # Проверка, было ли изображение загружено успешно
-                if image is None:
-                    messagebox.showerror("Ошибка!","Не удалось загрузить изображение. Проверьте название файла. Назовите его например 2.png")
+                image_path = filedialog.askopenfilename(title="Выберите изображение",
+                                                        filetypes=(("Изображения", "*.jpg;*.png;*.gif"),
+                                                                   ("Все файлы", "*.*")))
+                if image_path:
+                    # Загрузка изображения
+                    image = cv2.imread(image_path)
 
-                # Преобразование изображения в оттенки серого
-                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    # Проверка, было ли изображение загружено успешно
+                    if image is None:
+                        messagebox.showerror("Ошибка!","Не удалось загрузить изображение. Проверьте название файла. Назовите его например 2.png")
 
-                # Применение порогового значения для выделения текста
-                _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+                    # Преобразование изображения в оттенки серого
+                    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-                # Использование pytesseract для распознавания текста
-                recognized_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+                    # Применение порогового значения для выделения текста
+                    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-                if recognized_text:
-                    self.input_entry.delete("1.0", tk.END)
-                    self.input_entry.insert("1.0", recognized_text)
+                    # Использование pytesseract для распознавания текста
+                    recognized_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+
+                    if recognized_text:
+                        self.input_entry.delete("1.0", tk.END)
+                        self.input_entry.insert("1.0", recognized_text)
+                    else:
+                        messagebox.showinfo("Результат", "Текст не распознан.")
                 else:
-                    messagebox.showinfo("Результат", "Текст не распознан.")
+                    messagebox.showerror("Внимание!", "Картинка не выбрана!")
             else:
-                messagebox.showerror("Внимание!", "Картинка не выбрана!")
+                ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
+                if ask:
+                    download_tesserat()
         except Exception as e:
             # Получаем информацию об ошибке
             error_message = f"Возникла ошибка при распознавании текста:\n{str(e)}\n\n"
