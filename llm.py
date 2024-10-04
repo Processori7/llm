@@ -390,6 +390,16 @@ model_functions = {
                 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
                 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")}
 
+select_image_message_errors = {
+    "ru":"Картинка не выбрана!",
+    "en":"The picture is not selected!"
+}
+
+select_image_title_errors = {
+    "ru":"Внимание!",
+    "en":"Attention!"
+}
+
 update_error_message = {
     "ru":"Ошибка при проверке обновлений",
     "en":"Error checking for updates"
@@ -414,6 +424,36 @@ save_img_messages = {
     "ru":"Картинка сохранена в: ",
     "en":"The picture is saved in: "
 }
+
+text_recognition_error_messages = {
+    "ru": "Ошибка при распознавании текста.",
+    "en": "Error during text recognition."
+}
+
+image_load_error_messages = {
+    "ru": "Не удалось загрузить изображение. Проверьте название файла. Попробуйте переименовать например в 2.png",
+    "en": "Failed to load the image. Check the file name. Try renaming, for example, to 2.png"
+}
+
+no_text_recognized_messages = {
+    "ru": "Текст не распознан.",
+    "en": "No text recognized."
+}
+
+def get_text_recognition_error_message(isTranslate):
+    return text_recognition_error_messages["ru" if not isTranslate else "en"]
+
+def get_image_load_error_message(isTranslate):
+    return image_load_error_messages["ru" if not isTranslate else "en"]
+
+def get_no_text_recognized_message(isTranslate):
+    return no_text_recognized_messages["ru" if not isTranslate else "en"]
+
+def get_select_image_message_errors(isTranslate):
+    return select_image_message_errors["ru" if not isTranslate else "en"]
+
+def get_image_title_errors(isTranslate):
+    return select_image_title_errors["ru" if not isTranslate else "en"]
 
 def get_update_error_message(isTranslate):
     return update_error_message["ru" if not isTranslate else "en"]
@@ -761,7 +801,8 @@ class ChatApp(ctk.CTk):
 
                     # Проверка, было ли изображение загружено успешно
                     if image is None:
-                        messagebox.showerror("Ошибка!","Не удалось загрузить изображение. Проверьте название файла. Назовите его например 2.png")
+                        messagebox.showerror(get_image_title_errors(app.isTranslate),
+                                             get_image_load_error_message(app.isTranslate))
 
                     # Преобразование изображения в оттенки серого
                     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -776,19 +817,20 @@ class ChatApp(ctk.CTk):
                         self.input_entry.delete("1.0", tk.END)
                         self.input_entry.insert("1.0", recognized_text)
                     else:
-                        messagebox.showinfo("Результат", "Текст не распознан.")
+                        messagebox.showinfo("Result", get_no_text_recognized_message(app.isTranslate))
                 else:
-                    messagebox.showerror("Внимание!", "Картинка не выбрана!")
+                    messagebox.showerror(get_image_title_errors(app.isTranslate),
+                                         get_select_image_message_errors(app.isTranslate))
             else:
                 ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
                 if ask:
                     download_tesserat()
         except Exception as e:
             # Получаем информацию об ошибке
-            error_message = f"Возникла ошибка при распознавании текста:\n{str(e)}\n\n"
-            error_message += "Трассировка стека:\n" + traceback.format_exc()
+            error_message = f"{get_text_recognition_error_message(app.isTranslate)}\n{str(e)}\n\n"
+            error_message +=traceback.format_exc()
             # Показываем сообщение об ошибке
-            messagebox.showerror("Ошибка", error_message)
+            messagebox.showerror("Error", error_message)
 
     def update_model_list(self, category):
         # Фильтрация моделей в зависимости от выбранной категории
