@@ -824,7 +824,7 @@ class ChatApp(ctk.CTk):
                                          get_select_image_message_errors(app.isTranslate))
             else:
                 ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
-                if ask:
+                if ask ==True:
                     download_tesserat()
         except Exception as e:
             # Получаем информацию об ошибке
