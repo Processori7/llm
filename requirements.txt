@@ -20,3 +20,5 @@ colorlog
 yaspin
 keyboard
 gradio_client
+SpeechRecognition
+pyaudio

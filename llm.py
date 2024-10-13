@@ -13,6 +13,8 @@ import pystray
 import ctypes
 import cv2
 import traceback
+import speech_recognition as sr
+import threading
 from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager,ChatHub, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
@@ -22,7 +24,8 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.33"
+CURRENT_VERSION = "1.34"
+
 prompt = """###INSTRUCTIONS###
 
 You MUST follow the instructions for answering:
@@ -219,7 +222,7 @@ def communicate_with_KoboldAI(user_input):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_BlackboxAI(user_input):
+def communicate_with_BlackboxAI(user_input, model):
     try:
         ai = BLACKBOXAI(
             is_conversation=True,
@@ -231,10 +234,10 @@ def communicate_with_BlackboxAI(user_input):
             proxies={},
             history_offset=10250,
             act=None,
-            model=None
+            model=model
         )
         response = ai.chat(user_input)
-        return response
+        return response.replace("$@$v=undefined-rv1$@$", "")
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
@@ -271,12 +274,13 @@ model_functions = {
 "Gpt-4-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
 "Gpt-4o-mini-2024-07-18": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
 "gpt-4o": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o"),
+"Gpt-4o(Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4o"),
 "gpt-4o-mini": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o-mini"),
 "chatgpt-4o-latest": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
 "Gpt-4o1-mini": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
 "Gpt-4o1-preview": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
 "KoboldAI": communicate_with_KoboldAI,
-"BlackboxAI": communicate_with_BlackboxAI,
+"BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
@@ -288,6 +292,7 @@ model_functions = {
 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
 "Claude-3-sonnet": lambda user_input: communicate_with_Amigo(user_input, "claude-3-sonnet-20240229"),
 "Claude-3-5-sonnet-20240620": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
+"Claude-sonnet-3.5": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-sonnet-3.5"),
 "Claude-3-opus-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
 "Claude-3": lambda user_input: communicate_with_Prefind(user_input, "claude"),
 "Gpt-3.5-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
@@ -347,6 +352,7 @@ model_functions = {
 "Llama-3.1-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
 "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
 "Meta-Llama-3.1-405B": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
+"Llama-3.2-90B-Vision-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct"),
 "Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
 "Mixtral-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
 "WizardLM-2-8x22B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
@@ -389,6 +395,11 @@ model_functions = {
 "BlackboxAIImager_img":lambda user_input: communicate_with_BlackboxAIImager(user_input),
 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")
+}
+
+talk_please = {
+    "ru":"Пожалуйста, говорите",
+    "en":"Please speak"
 }
 
 select_image_message_errors = {
@@ -441,6 +452,17 @@ no_text_recognized_messages = {
     "en": "No text recognized."
 }
 
+micro_error_message={
+    "ru":"Микрофон не доступен!",
+    "en":"Microphone is not available!"
+}
+
+def get_micro_error_message(isTranslate):
+    return micro_error_message["ru" if not isTranslate else "en"]
+
+def get_talk_please(isTranslate):
+    return talk_please["ru" if not isTranslate else "en"]
+
 def get_text_recognition_error_message(isTranslate):
     return text_recognition_error_messages["ru" if not isTranslate else "en"]
 
@@ -478,7 +500,7 @@ def communicate_with_VLM(user_input, model):
             filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")]
         )
         if image_path:
-            vlm_instance = VLM(model=model, is_conversation=True, max_tokens=600, timeout=30)
+            vlm_instance = VLM(model=model)
             image_base64 = vlm_instance.encode_image_to_base64(image_path)
 
             prompt = {
@@ -625,7 +647,8 @@ class ChatApp(ctk.CTk):
 
             pytesseract.tesseract_cmd = 'tesseract.exe'
             self.tesseract_cmd = 'tesseract.exe'
-
+            self.is_listening = False  # Флаг для отслеживания состояния прослушивания
+            self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
 
             self.title("AI Chat")
@@ -735,6 +758,17 @@ class ChatApp(ctk.CTk):
                                               font=("Consolas", 14), text_color="white")
             self.clear_button.pack(side="top", padx=5, pady=10)
 
+            # Кнопка голосового ввода
+            self.speech_reco_button = ctk.CTkButton(self.button_frame, text="Голосовой ввод",
+                                                    command=self.toggle_recognition,
+                                                    font=("Consolas", 14), text_color="white")
+            self.speech_reco_button.pack(side="top", padx=5, pady=10)
+
+            # Кнопка распознавания текста с картинки
+            self.img_reco_button = ctk.CTkButton(self.button_frame, text="Распознать текст", command=self.recognize_text,
+                                                 font=("Consolas", 14), text_color="white")
+            self.img_reco_button.pack(side="top", padx=5, pady=10)
+
             # Кнопка переключения темы
             self.theme_button = ctk.CTkButton(self.button_frame, text="Светлая тема", command=self.toggle_theme,
                                               font=("Consolas", 14), text_color="white")
@@ -744,11 +778,6 @@ class ChatApp(ctk.CTk):
             self.lang_button = ctk.CTkButton(self.button_frame, text="English", command=self.toggle_lang,
                                              font=("Consolas", 14), text_color="white")
             self.lang_button.pack(side="top", padx=5, pady=10)
-
-            # Кнопка переключения языка
-            self.ing_reco_button = ctk.CTkButton(self.button_frame, text="Распознать текст", command=self.recognize_text,
-                                             font=("Consolas", 14), text_color="white")
-            self.ing_reco_button.pack(side="top", padx=5, pady=10)
 
             # Кнопка закрытия программы
             self.exit_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
@@ -779,6 +808,54 @@ class ChatApp(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def toggle_recognition(self):
+        if self.is_listening:
+            self.is_listening = False  # Остановить распознавание
+            if self.stop_listening:
+                self.stop_listening()  # Немедленно остановить прослушивание
+        else:
+            self.is_listening = True  # Начать распознавание
+            self.stop_listening = None  # Сбрасываем объект остановки
+            threading.Thread(target=self.recognize_speech).start()  # Запускаем распознавание в отдельном потоке
+
+    def recognize_speech(self):
+        recognizer = sr.Recognizer()
+
+        # Проверяем доступность микрофона
+        mic_list = sr.Microphone.list_microphone_names()
+        if not mic_list:
+            messagebox.showerror("Error", get_micro_error_message(self.isTranslate))
+            return
+
+        with sr.Microphone() as source:
+            self.input_entry.delete("1.0", tk.END)
+            self.input_entry.insert("1.0", get_talk_please(self.isTranslate))
+            isTextDelete = False
+            while self.is_listening:
+                try:
+                    # Слушаем звук
+                    audio = recognizer.listen(source, timeout=3)  # Установите таймаут, чтобы избежать зависания
+                    # Определяем язык в зависимости от переменной isTranslate
+                    language = 'en-US' if self.isTranslate else 'ru-RU'
+                    # Распознаем речь с помощью Google Web Speech API
+                    text = recognizer.recognize_google(audio, language=language)
+                    if not isTextDelete:
+                        self.input_entry.delete("1.0", tk.END)
+                        isTextDelete = True
+                    if text and isTextDelete:
+                        self.input_entry.insert(tk.END, text + " ")
+                except sr.WaitTimeoutError:
+                    # Если таймаут истек, завершаем прослушивание
+                    self.is_listening = False
+                    return
+                except sr.RequestError as e:
+                    self.input_entry.delete("1.0", tk.END)
+                    self.input_entry.insert("1.0", "Request to the speech recognition service failed.")
+                except Exception as e:
+                    self.input_entry.delete("1.0", tk.END)
+                    self.input_entry.insert("1.0", "An error has occurred.")
+
 
     def filter_models(self, *args):
         search_term = self.search_var.get().lower()
@@ -1085,8 +1162,9 @@ class ChatApp(ctk.CTk):
             self.context_menu.add_command(label="Отменить действие", command=self.undo_input)
             self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
-            self.ing_reco_button.configure(text="Распознать текст")
+            self.img_reco_button.configure(text="Распознать текст")
             self.search_label.configure(text="Поиск модели:")
+            self.speech_reco_button.configure(text="Голосовой ввод")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -1103,8 +1181,9 @@ class ChatApp(ctk.CTk):
             self.context_menu.add_command(label="Undo", command=self.undo_input)
             self.chat_history_context_menu.add_command(label="Copy", command=self.copy_text)
             self.chat_history_context_menu.add_command(label="Select All", command=self.select_all)
-            self.ing_reco_button.configure(text="Recognize text")
+            self.img_reco_button.configure(text="Recognize text")
             self.search_label.configure(text="Model Search:")
+            self.speech_reco_button.configure(text="Voice input")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
