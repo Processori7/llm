@@ -15,7 +15,7 @@ import cv2
 import traceback
 import speech_recognition as sr
 import threading
-from webscout import KOBOLDAI, BLACKBOXAI, BlackboxAIImager,ChatHub, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, BlackboxAIImager,ChatHub, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -24,7 +24,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.34"
+CURRENT_VERSION = "1.35"
 
 prompt = """###INSTRUCTIONS###
 
@@ -116,7 +116,15 @@ def check_for_updates():
                                       type='yesno') == 'yes':
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
-        messagebox.showerror(get_update_error_message(app.isTranslate), str(e))
+        messagebox.showerror("Error", str(e))
+
+def communicate_with_YouChat(user_input):
+    try:
+        ai = YouChat()
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Chathub(user_input, model):
     try:
@@ -285,6 +293,7 @@ model_functions = {
 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
 "Phind": communicate_with_Phind,
+"You.com chat": communicate_with_YouChat,
 "Bagoodex":communicate_with_Bagoodex,
 "Sonar-online": lambda user_input: communicate_with_Chathub(user_input, "perplexity/sonar-online"),
 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
@@ -412,11 +421,6 @@ select_image_title_errors = {
     "en":"Attention!"
 }
 
-update_error_message = {
-    "ru":"Ошибка при проверке обновлений",
-    "en":"Error checking for updates"
-}
-
 error_messages = {
     "ru":"Ошибка получения данных от провайдера, пожалуйста, выберите другого провайдера или модель",
     "en":"Error receiving data from provider, please select another provider or model"
@@ -477,9 +481,6 @@ def get_select_image_message_errors(isTranslate):
 
 def get_image_title_errors(isTranslate):
     return select_image_title_errors["ru" if not isTranslate else "en"]
-
-def get_update_error_message(isTranslate):
-    return update_error_message["ru" if not isTranslate else "en"]
 
 def get_tesseract_not_found_messages(isTranslate):
     return tesseract_not_found_messages["ru" if not isTranslate else "en"]

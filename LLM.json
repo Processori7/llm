@@ -200,6 +200,14 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/gradio_client;gradio_client/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/speech_recognition;speech_recognition/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pyaudio;pyaudio/"
   }
  ],
  "nonPyinstallerOptions": {
