@@ -15,7 +15,7 @@ import cv2
 import traceback
 import speech_recognition as sr
 import threading
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, BlackboxAIImager,ChatHub, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DeepInfraImager, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, AmigoImager, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Perplexity, Felo, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, WEBS as w
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -24,7 +24,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.35"
+CURRENT_VERSION = "1.36"
 
 prompt = """###INSTRUCTIONS###
 
@@ -118,18 +118,25 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
-def communicate_with_YouChat(user_input):
+def communicate_with_Perplexity(user_input):
     try:
-        ai = YouChat()
+        ai = Perplexity()
         response = ai.chat(user_input)
         return response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_Chathub(user_input, model):
+def communicate_with_Felo(user_input):
     try:
-        ai = ChatHub()
-        ai.model = model
+        ai = Felo()
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+def communicate_with_YouChat(user_input):
+    try:
+        ai = YouChat()
         response = ai.chat(user_input)
         return response
     except Exception as e:
@@ -294,8 +301,9 @@ model_functions = {
 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
 "Phind": communicate_with_Phind,
 "You.com chat": communicate_with_YouChat,
+"Felo": communicate_with_Felo,
 "Bagoodex":communicate_with_Bagoodex,
-"Sonar-online": lambda user_input: communicate_with_Chathub(user_input, "perplexity/sonar-online"),
+"Perplexity":communicate_with_Perplexity,
 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
@@ -335,7 +343,6 @@ model_functions = {
 "Qwen1.5-110B-Chat": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-110B-Chat"),
 "Qwen2-72B-Instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen2-72B-Instruct"),
 "Gemma-2b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2b-it"),
-"Gemma-2": lambda user_input: communicate_with_Chathub(user_input, "google/gemma-2"),
 "Dbrx-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "dbrx-instruct"),
 "Deepseek-coder-33b-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-coder-33b-instruct"),
 "Deepseek-llm-67b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-llm-67b-chat"),
@@ -359,6 +366,9 @@ model_functions = {
 "Reflection-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "mattshumer/Reflection-Llama-3.1-70B"),
 "Llama 3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
 "Llama-3.1-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
+"Llama-3.1-70B-Instruct-Turbo(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"),
+"Llama-3.1-Nemotron-70B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Llama-3.1-Nemotron-70B-Instruct"),
+"Llama-3.2-90B-Vision-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct"),
 "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
 "Meta-Llama-3.1-405B": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
 "Llama-3.2-90B-Vision-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct"),
@@ -389,9 +399,6 @@ model_functions = {
 "TurbovisionXL_v431_img":lambda user_input: communicate_with_NexraImager(user_input, "turbovisionXL_v431.safetensors [78890989]"),
 "Devlishphotorealism_sdxl15_img":lambda user_input: communicate_with_NexraImager(user_input, "devlishphotorealism_sdxl15.safetensors [77cba69f]"),
 "RealvisxlV40_img":lambda user_input: communicate_with_NexraImager(user_input, "realvisxlV40.safetensors [f7fdcb51]"),
-"Dalle-e-3_img":lambda user_input: communicate_with_AmigoImager(user_input, "dalle-e-3"),
-"Flux-pro_img":lambda user_input: communicate_with_AmigoImager(user_input, "flux-pro"),
-"Flux-realism_img":lambda user_input: communicate_with_AmigoImager(user_input, "flux-realism"),
 # "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
 # "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
 # "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
@@ -607,35 +614,6 @@ def communicate_with_NexraImager(user_input, model):
                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
 
         return f"{get_save_img_messages(app.isTranslate)}{', '.join(saved_images)}"
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_AmigoImager(user_input, model):
-    try:
-        ai = AmigoImager()
-        ai.model = model
-        resp = ai.generate(user_input, model)
-
-        # Проверяем, что resp - это список изображений
-        if isinstance(resp, list) and len(resp) > 0:
-            num_images = len(resp)  # Количество изображений
-        else:
-            raise ValueError(get_error_gen_img_messages(app.isTranslate))
-
-        img_folder = 'img'
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-
-        now = datetime.now()
-        saved_images = []  # Список для хранения путей сохраненных изображений
-
-        for i, image_data in enumerate(resp):
-            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
-            with Image.open(BytesIO(image_data)) as img:
-                img.save(image_path)
-                saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
-
-        return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
