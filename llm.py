@@ -16,6 +16,7 @@ import traceback
 import speech_recognition as sr
 import threading
 from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Perplexity, Felo, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, WEBS as w
+from webscout import Marcus, AskMyAI
 from freeGPT import Client
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -24,7 +25,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.36"
+CURRENT_VERSION = "1.37"
 
 prompt = """###INSTRUCTIONS###
 
@@ -117,6 +118,22 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
+
+def communicate_with_AskMyAI(user_input):
+    try:
+        ai = AskMyAI()
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+def communicate_with_Marcus(user_input):
+    try:
+        ai = Marcus()
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Perplexity(user_input):
     try:
@@ -304,6 +321,8 @@ model_functions = {
 "Felo": communicate_with_Felo,
 "Bagoodex":communicate_with_Bagoodex,
 "Perplexity":communicate_with_Perplexity,
+"Marcus":communicate_with_Marcus,
+"AskMyAI":communicate_with_AskMyAI,
 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
@@ -327,6 +346,7 @@ model_functions = {
 "Llama-2-13b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-2-13b-chat"),
 "Llama-3.1-405b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-405b-turbo"),
 "Llama-3.1-405B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"),
+"Llama-3.2-90B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo"),
 "Llama-3.1-70b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-70b-turbo"),
 "Llama-3.1-8b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-8b-turbo"),
 "LlamaGuard-2-8b": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),

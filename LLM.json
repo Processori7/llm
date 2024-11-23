@@ -208,6 +208,10 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pyaudio;pyaudio/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/jinja2;jinja2/"
   }
  ],
  "nonPyinstallerOptions": {

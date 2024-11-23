@@ -22,3 +22,4 @@ keyboard
 gradio_client
 SpeechRecognition
 pyaudio
+jinja2
