@@ -15,7 +15,7 @@ import cv2
 import traceback
 import speech_recognition as sr
 import threading
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Perplexity, Felo, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Perplexity, Felo, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, PerplexityLabs, WEBS as w
 from webscout import Marcus, AskMyAI
 from freeGPT import Client
 from datetime import datetime
@@ -25,7 +25,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.37"
+CURRENT_VERSION = "1.38"
 
 prompt = """###INSTRUCTIONS###
 
@@ -118,6 +118,15 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
+
+def communicate_with_PerplexityLabs(user_input, model):
+    try:
+        ai = PerplexityLabs()
+        ai.model = model
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_AskMyAI(user_input):
     try:
@@ -323,6 +332,12 @@ model_functions = {
 "Perplexity":communicate_with_Perplexity,
 "Marcus":communicate_with_Marcus,
 "AskMyAI":communicate_with_AskMyAI,
+"llama-3.1-sonar-large-128k-online": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-large-128k-online"),
+"llama-3.1-sonar-small-128k-online": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-small-128k-online"),
+"llama-3.1-sonar-large-128k-chat": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-large-128k-chat"),
+"llama-3.1-sonar-small-128k-chat": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-small-128k-chat"),
+"llama-3.1-8b-instruct": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-8b-instruct"),
+"llama-3.1-70b-instruct": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-70b-instruct"),
 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
