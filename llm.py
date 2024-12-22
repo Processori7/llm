@@ -15,7 +15,7 @@ import cv2
 import traceback
 import speech_recognition as sr
 import threading
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Perplexity, Felo, BlackboxAIImager, Bing, PhindSearch, PrefindAI, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, PerplexityLabs, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, WEBS as w
 from webscout import Marcus, AskMyAI
 from freeGPT import Client
 from datetime import datetime
@@ -25,7 +25,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.38"
+CURRENT_VERSION = "1.39"
 
 prompt = """###INSTRUCTIONS###
 
@@ -119,12 +119,16 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
-def communicate_with_PerplexityLabs(user_input, model):
+def communicate_with_TurboSeek(user_input):
     try:
-        ai = PerplexityLabs()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
+        ai = TurboSeek()
+        response = ai.chat(user_input, stream=True)
+        full_response = ""
+
+        for chunk in response:
+            full_response += chunk
+
+        return full_response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
@@ -139,14 +143,6 @@ def communicate_with_AskMyAI(user_input):
 def communicate_with_Marcus(user_input):
     try:
         ai = Marcus()
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_Perplexity(user_input):
-    try:
-        ai = Perplexity()
         response = ai.chat(user_input)
         return response
     except Exception as e:
@@ -173,15 +169,6 @@ def communicate_with_Bagoodex(user_input):
         ai = Bagoodex()
         response = ai.chat(user_input)
         return response.encode('latin1').decode('utf-8')
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_Prefind(user_input, model):
-    try:
-        ai = PrefindAI()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
@@ -320,24 +307,19 @@ model_functions = {
 "chatgpt-4o-latest": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
 "Gpt-4o1-mini": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
 "Gpt-4o1-preview": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
-"KoboldAI": communicate_with_KoboldAI,
-"BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
+"Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
+"BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
+"KoboldAI": communicate_with_KoboldAI,
 "Phind": communicate_with_Phind,
 "You.com chat": communicate_with_YouChat,
 "Felo": communicate_with_Felo,
 "Bagoodex":communicate_with_Bagoodex,
-"Perplexity":communicate_with_Perplexity,
+"TurboSeek":communicate_with_TurboSeek,
 "Marcus":communicate_with_Marcus,
 "AskMyAI":communicate_with_AskMyAI,
-"llama-3.1-sonar-large-128k-online": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-large-128k-online"),
-"llama-3.1-sonar-small-128k-online": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-small-128k-online"),
-"llama-3.1-sonar-large-128k-chat": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-large-128k-chat"),
-"llama-3.1-sonar-small-128k-chat": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-sonar-small-128k-chat"),
-"llama-3.1-8b-instruct": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-8b-instruct"),
-"llama-3.1-70b-instruct": lambda user_input: communicate_with_PerplexityLabs(user_input, "llama-3.1-70b-instruct"),
 "Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
 "Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
 "Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
@@ -345,7 +327,6 @@ model_functions = {
 "Claude-3-5-sonnet-20240620": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
 "Claude-sonnet-3.5": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-sonnet-3.5"),
 "Claude-3-opus-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
-"Claude-3": lambda user_input: communicate_with_Prefind(user_input, "claude"),
 "Gpt-3.5-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
 "Gpt-3.5-turbo-0125": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
 "Gpt-3.5-turbo-1106": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
@@ -367,7 +348,6 @@ model_functions = {
 "LlamaGuard-2-8b": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),
 "Llama-Guard-7b": lambda user_input: communicate_with_DiscordRocks(user_input, "Llama-Guard-7b"),
 "Meta-Llama-Guard-3-8B": lambda user_input: communicate_with_DiscordRocks(user_input, "Meta-Llama-Guard-3-8B"),
-"Llama-3": lambda user_input: communicate_with_Prefind(user_input, "llama"),
 "Mixtral-8x7B-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-v0.1"),
 "Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-Instruct-v0.1"),
 "Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x22B-Instruct-v0.1"),
