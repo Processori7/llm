@@ -15,7 +15,7 @@ import cv2
 import traceback
 import speech_recognition as sr
 import threading
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, OOAi, WEBS as w
 from webscout import Marcus, AskMyAI
 from freeGPT import Client
 from datetime import datetime
@@ -25,7 +25,7 @@ from io import BytesIO
 from packaging import version
 
 
-CURRENT_VERSION = "1.39"
+CURRENT_VERSION = "1.40"
 
 prompt = """###INSTRUCTIONS###
 
@@ -119,6 +119,32 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
+def communicate_with_Netwrck(user_input, model):
+    try:
+        ai = Netwrck(model=model)
+        response = ai.chat(user_input, stream=True)
+        full_response = ""
+
+        for chunk in response:
+            full_response += chunk
+
+        return full_response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+def communicate_with_OOAi(user_input):
+    try:
+        ai = OOAi()
+        response = ai.chat(user_input, stream=True)
+        full_response = ""
+
+        for chunk in response:
+            full_response += chunk
+
+        return full_response
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
 def communicate_with_TurboSeek(user_input):
     try:
         ai = TurboSeek()
@@ -156,11 +182,12 @@ def communicate_with_Felo(user_input):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_YouChat(user_input):
+def communicate_with_YouChat(user_input, model):
     try:
         ai = YouChat()
+        ai.model = model
         response = ai.chat(user_input)
-        return response
+        return response.replace('####', '').replace('**', '')
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
@@ -308,13 +335,48 @@ model_functions = {
 "Gpt-4o1-mini": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
 "Gpt-4o1-preview": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
-"Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
 "BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
+"gpt4mini": lambda user_input: communicate_with_Netwrck(user_input, "gpt4mini"),
+"llama-3.1-lumimaid-8b": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
+"grok-2": lambda user_input: communicate_with_Netwrck(user_input, "grok"),
+"claude-3.5-sonnet:beta": lambda user_input: communicate_with_Netwrck(user_input, "claude"),
+"l3-euryale-70b": lambda user_input: communicate_with_Netwrck(user_input, "euryale"),
+"mythomax-l2-13b": lambda user_input: communicate_with_Netwrck(user_input, "mythomax"),
+"gemini-pro-1.5": lambda user_input: communicate_with_Netwrck(user_input, "gemini"),
+"llama-3.1-lumimaid-70b": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid70b"),
+"llama-3.1-nemotron-70b": lambda user_input: communicate_with_Netwrck(user_input, "nemotron"),
+"openai-o1": lambda user_input: communicate_with_YouChat(user_input, "openai_o1"),
+"openai-o1-mini": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_mini"),
+"gpt-4o-mini You": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o_mini"),
+"gpt-4o You": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o"),
+"gpt-4-turbo": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_turbo"),
+"gpt-4": lambda user_input: communicate_with_YouChat(user_input, "gpt_4"),
+"claude-3.5-sonnet": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_sonnet"),
+"claude-3-opus": lambda user_input: communicate_with_YouChat(user_input, "claude_3_opus"),
+"claude-3-sonnet": lambda user_input: communicate_with_YouChat(user_input, "claude_3_sonnet"),
+"claude-3.5-haiku": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_haiku"),
+"claude-3-haiku": lambda user_input: communicate_with_YouChat(user_input, "claude_3_haiku"),
+"llama3-3.70b": lambda user_input: communicate_with_YouChat(user_input, "llama3_3_70b"),
+"llama3-2.90b": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_90b"),
+"llama3-2.11b": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_11b"),
+"llama3-1.405b": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_405b"),
+"llama3-1.70b": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_70b"),
+"llama3": lambda user_input: communicate_with_YouChat(user_input, "llama3"),
+"mistral-large-2": lambda user_input: communicate_with_YouChat(user_input, "mistral_large_2"),
+"gemini-1.5-flash": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
+"gemini-1.5-pro": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
+"databricks-dbrx-instruct": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
+"qwen2p5-72b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
+"qwen2p5-coder-32b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
+"command-r": lambda user_input: communicate_with_YouChat(user_input, "command_r"),
+"command-r-plus": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
+"solar-1-mini": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
+"dolphin-2.5": lambda user_input: communicate_with_YouChat(user_input, "dolphin_2_5"),
 "KoboldAI": communicate_with_KoboldAI,
+"OOAi":communicate_with_OOAi,
 "Phind": communicate_with_Phind,
-"You.com chat": communicate_with_YouChat,
 "Felo": communicate_with_Felo,
 "Bagoodex":communicate_with_Bagoodex,
 "TurboSeek":communicate_with_TurboSeek,
