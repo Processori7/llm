@@ -1,0 +1,153 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #1e1e1e;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.chat-container {
+    width: 90%;
+    max-width: 1900px;
+    background-color: #2a2a2a;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex; /* Flexbox для центрирования */
+    flex-direction: column; /* Вертикальная ориентация */
+    align-items: center; /* Центрирование по горизонтали */
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+.chat-box {
+    width: 100%;
+    max-width: 800px; /* Ограничение ширины для лучшего отображения */
+    height: 300px;
+    background-color: #1e1e1e;
+    border: 1px solid #444444;
+    border-radius: 5px;
+    padding: 10px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    color: #ffffff;
+    font-size: 1em;
+}
+
+.model-selector {
+    display: flex;
+    justify-content: center; /* Центрирование по горизонтали */
+    align-items: center;
+    margin-bottom: 10px;
+    width: 100%; /* Занимает всю ширину контейнера */
+}
+
+.model-selector label {
+    margin-right: 10px;
+}
+
+select {
+    width: 100%;
+    max-width: 200px; /* Ограничение ширины для адаптивности */
+    padding: 10px;
+    border: 1px solid #444444;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: #ffffff;
+}
+
+textarea {
+    width: calc(100% - 22px);
+    height: 100px;
+    border: 1px solid #444444;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    resize: vertical;
+    color: #ffffff;
+    background-color: #2a2a2a;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 100%; /* Занимает всю ширину контейнера */
+}
+
+button {
+    width: calc(33.33% - 10px);
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #ffffff;
+    cursor: pointer;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:last-child {
+    margin-right: 0;
+}
+
+@media (max-width: 600px) {
+    button {
+        width: calc(50% - 10px);
+    }
+}
+
+@media (max-width: 400px) {
+    button {
+        width: 100%;
+        margin-right: 0;
+    }
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.user {
+    background-color: #333333;
+    color: yellow;
+}
+
+.bot {
+    background-color: #444444;
+    color: white;
+}
+
+@media (max-width: 300px) {
+    .chat-container {
+        padding: 10px;
+    }
+
+    textarea {
+        height: 80px;
+    }
+
+    button {
+        padding: 8px;
+    }
+
+    select {
+        max-width: 100%; /* Полная ширина на маленьких экранах */
+    }
+}

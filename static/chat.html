@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <h1>Чат с AI</h1>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="model-selector">
+            <label for="model-select">Выбор моделей:</label>
+            <select id="model-select">
+                <!-- Модели будут загружены динамически -->
+            </select>
+        </div>
+        <textarea id="user-input" placeholder="Text..."></textarea>
+        <div class="buttons">
+            <button id="send-button">Отправить</button>
+            <button id="save-chat-button">Сохранить чат</button>
+            <button id="clear-chat-button">Очистить чат</button>
+            <button id="swagger-button">Swagger</button>
+            <button id="lang-button">English</button>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
