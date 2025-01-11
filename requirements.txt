@@ -24,3 +24,6 @@ SpeechRecognition
 pyaudio
 jinja2
 pygetwindow
+uvicorn
+asyncio
+fastapi

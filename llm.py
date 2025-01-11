@@ -15,6 +15,8 @@ import cv2
 import traceback
 import speech_recognition as sr
 import threading
+import uvicorn
+import socket
 from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, OOAi, WEBS as w
 from webscout import Marcus, AskMyAI
 from freeGPT import Client
@@ -23,9 +25,12 @@ from tkinter import messagebox, filedialog
 from PIL import Image
 from io import BytesIO
 from packaging import version
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 
-CURRENT_VERSION = "1.40"
+CURRENT_VERSION = "1.41"
 
 prompt = """###INSTRUCTIONS###
 
@@ -636,35 +641,6 @@ def communicate_with_BlackboxAIImager(user_input):
     except Exception as e:
        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-# def communicate_with_DeepInfraImager(user_input, model):
-#     try:
-#         ai = DeepInfraImager()
-#         ai.model = model
-#         resp = ai.generate(user_input, 1)
-#
-#         # Проверяем, что resp - это список изображений
-#         if isinstance(resp, list) and len(resp) > 0:
-#             num_images = len(resp)  # Количество изображений
-#         else:
-#             raise ValueError(get_error_gen_img_messages(app.isTranslate))
-#
-#         img_folder = 'img'
-#         if not os.path.exists(img_folder):
-#             os.makedirs(img_folder)
-#
-#         now = datetime.now()
-#         saved_images = []  # Список для хранения путей сохраненных изображений
-#
-#         for i, image_data in enumerate(resp):
-#             image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
-#             with Image.open(BytesIO(image_data)) as img:
-#                 img.save(image_path)
-#                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
-#
-#         return f"Сохранено {num_images} изображений: {', '.join(saved_images)}"
-#     except Exception as e:
-#         return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
 def communicate_with_NexraImager(user_input, model):
     try:
         ai = NexraImager()
@@ -706,6 +682,9 @@ class ChatApp(ctk.CTk):
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
             self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
+            self.server_process = None
+            self.api_running = False
+            self.local_ip = self.get_local_ip()
 
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
@@ -835,6 +814,12 @@ class ChatApp(ctk.CTk):
                                              font=("Consolas", 14), text_color="white")
             self.lang_button.pack(side="top", padx=5, pady=10)
 
+            # Кнопка API Mode
+            self.api_mode_button = ctk.CTkButton(self.button_frame, text="API Mode", command=self.toggle_api_mode,
+                                                 font=("Consolas", 14), text_color="white")
+
+            self.api_mode_button.pack(side="top", padx=5, pady=10)
+
             # Кнопка закрытия программы
             self.exit_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
                                              font=("Consolas", 14), text_color="white")
@@ -864,6 +849,77 @@ class ChatApp(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def get_local_ip(self):
+        try:
+            # Получаем локальный IP-адрес
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+        finally:
+            s.close()
+        return local_ip
+
+    def toggle_api_mode(self):
+        if self.api_running:
+            self.stop_api_mode()
+        else:
+            self.start_api_mode()
+
+    def start_api_mode(self):
+        def run_fastapi_app():
+            app = FastAPI()
+
+            # Разрешаем CORS для всех источников (можно ограничить по необходимости)
+            app.add_middleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_credentials=True,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+
+            # Модель данных для запроса к /api/gpt/ans
+            class MessageRequest(BaseModel):
+                model: str
+                message: str
+
+            # Определение маршрута для получения списка моделей
+            @app.get("/api/ai/models")
+            def get_models():
+                filtered_models = [model for model in model_functions.keys() if
+                                   "_img" not in model and "(Photo Analyze)" not in model]
+                return {"models": filtered_models}
+
+            # Определение маршрута для получения ответа от модели
+            @app.post("/api/gpt/ans")
+            def get_answer(request: MessageRequest):
+                model = request.model
+                message = request.message
+
+                if model not in model_functions:
+                    raise HTTPException(status_code=404, detail="Model not found")
+
+                response = model_functions[model](message)
+                return {"response": response}
+
+            # Запуск сервера
+            uvicorn.run(app, host=self.local_ip, port=8000)
+
+            # Запуск FastAPI-сервера в отдельном потоке
+
+        self.server_process = threading.Thread(target=run_fastapi_app)
+        self.server_process.start()
+        server_url = f"http://{self.local_ip}:8000/docs"
+        # Открываем страницу со Swagger
+        webbrowser.open(server_url)
+
+        self.api_running = True
+        # self.api_mode_button.configure(text="Stop API Mode")
+
+    def stop_api_mode(self):
+        self.api_running = False
+        self.api_mode_button.configure(text="API Mode")
 
     def toggle_recognition(self):
         if self.is_listening:
@@ -1242,6 +1298,7 @@ class ChatApp(ctk.CTk):
             self.speech_reco_button.configure(text="Voice input")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
+
 
 if __name__ == "__main__":
     check_for_updates()
