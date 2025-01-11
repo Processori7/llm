@@ -228,10 +228,6 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pydantic;pydantic/"
-  },
-  {
-   "optionDest": "datas",
-   "value": "E:/Users/Igory/Desktop/AnsiUi2/static;static/"
   }
  ],
  "nonPyinstallerOptions": {
