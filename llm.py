@@ -28,6 +28,8 @@ from packaging import version
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 
 
 CURRENT_VERSION = "1.41"
@@ -903,6 +905,15 @@ class ChatApp(ctk.CTk):
                 response = model_functions[model](message)
                 return {"response": response}
 
+            # Статические файлы
+            app.mount("/static", StaticFiles(directory="static"), name="static")
+
+            # Главная страница чата
+            @app.get("/chat")
+            def read_chat():
+                with open("static/chat.html", "r", encoding="utf-8") as file:
+                    return HTMLResponse(content=file.read())
+
             # Запуск сервера
             uvicorn.run(app, host=self.local_ip, port=8000)
 
@@ -910,7 +921,7 @@ class ChatApp(ctk.CTk):
 
         self.server_process = threading.Thread(target=run_fastapi_app)
         self.server_process.start()
-        server_url = f"http://{self.local_ip}:8000/docs"
+        server_url = f"http://{self.local_ip}:8000/chat"
         # Открываем страницу со Swagger
         webbrowser.open(server_url)
 
