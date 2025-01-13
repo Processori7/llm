@@ -1,7 +1,5 @@
 import os
 import pytesseract
-# Скрываем сообщения от Pygame
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import re
 import requests
 import webbrowser
@@ -17,7 +15,8 @@ import speech_recognition as sr
 import threading
 import uvicorn
 import socket
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, OOAi, WEBS as w
+
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, OOAi, Qwenlm, WEBS as w
 from webscout import Marcus, AskMyAI
 from freeGPT import Client
 from datetime import datetime
@@ -32,7 +31,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
 
-CURRENT_VERSION = "1.41"
+# Скрываем сообщения от Pygame
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
+CURRENT_VERSION = "1.42"
 
 prompt = """###INSTRUCTIONS###
 
@@ -125,6 +127,20 @@ def check_for_updates():
                 update_app(download_url)
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
+
+def communicate_with_Qwenlm(user_input, model):
+    try:
+        ai = Qwenlm(timeout=5000)
+        ai.model = model
+        response = ai.chat(user_input, stream=True)
+        last_chunk = ""  # Переменная для хранения последнего chunk
+
+        for chunk in response:
+            last_chunk = chunk  # Сохраняем текущий chunk как последний
+
+        return last_chunk
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 def communicate_with_Netwrck(user_input, model):
     try:
@@ -375,8 +391,13 @@ model_functions = {
 "gemini-1.5-flash": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
 "gemini-1.5-pro": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
 "databricks-dbrx-instruct": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
-"qwen2p5-72b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
-"qwen2p5-coder-32b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
+"qwen2.5-72b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
+"qwen2.5-coder-32b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
+"qwen2.5-coder-32b-instruct":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct"),
+"qwen-plus-latest":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest"),
+"qvq-72b-preview":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview"),
+"qvq-32b-preview":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview"),
+"qwen-vl-max-latest":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest"),
 "command-r": lambda user_input: communicate_with_YouChat(user_input, "command_r"),
 "command-r-plus": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
 "solar-1-mini": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
@@ -685,6 +706,7 @@ class ChatApp(ctk.CTk):
             self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
             self.server_process = None
+            self.uvicorn_server = None
             self.api_running = False
             self.local_ip = self.get_local_ip()
 
@@ -914,21 +936,23 @@ class ChatApp(ctk.CTk):
                 with open("static/chat.html", "r", encoding="utf-8") as file:
                     return HTMLResponse(content=file.read())
 
-            # Запуск сервера
-            uvicorn.run(app, host=self.local_ip, port=8000)
-
-            # Запуск FastAPI-сервера в отдельном потоке
+            config = uvicorn.Config(app, host=self.local_ip, port=8000, log_level="info")
+            self.uvicorn_server = uvicorn.Server(config=config)
+            self.uvicorn_server.run()
 
         self.server_process = threading.Thread(target=run_fastapi_app)
         self.server_process.start()
         server_url = f"http://{self.local_ip}:8000/chat"
-        # Открываем страницу со Swagger
         webbrowser.open(server_url)
-
         self.api_running = True
-        # self.api_mode_button.configure(text="Stop API Mode")
+        self.api_mode_button.configure(text="Stop API Mode")
 
     def stop_api_mode(self):
+        if self.uvicorn_server is not None:
+            self.uvicorn_server.should_exit = True
+            self.uvicorn_server.force_exit = True
+            self.uvicorn_server.shutdown()
+            self.uvicorn_server = None
         self.api_running = False
         self.api_mode_button.configure(text="API Mode")
 
