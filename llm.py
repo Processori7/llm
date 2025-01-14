@@ -132,13 +132,8 @@ def communicate_with_Qwenlm(user_input, model):
     try:
         ai = Qwenlm(timeout=5000)
         ai.model = model
-        response = ai.chat(user_input, stream=True)
-        last_chunk = ""  # Переменная для хранения последнего chunk
-
-        for chunk in response:
-            last_chunk = chunk  # Сохраняем текущий chunk как последний
-
-        return last_chunk
+        response = ai.chat(user_input, stream=False)
+        return response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
