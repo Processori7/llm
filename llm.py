@@ -1,4 +1,5 @@
 import os
+import sys
 import pytesseract
 import re
 import requests
@@ -70,6 +71,18 @@ Answer the question in a natural, human-like manner.
 ALWAYS use an answering example for a first message structure.
 """ # Добавление навыков ИИ и другие тонкие настройки
 
+# Функция для получения корректного пути к ресурсам
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    # print(os.path.join(base_path, relative_path))
+    return os.path.join(base_path, relative_path)
+
+
 def download_tesserat():
     try:
         # Получение информации о последнем релизе на GitHub
@@ -77,11 +90,11 @@ def download_tesserat():
         response.raise_for_status()
         latest_release = response.json()
 
-        # Получение ссылки на файл llm.exe последней версии
+        # Получение ссылки на файл tesseract.exe
         download_url = None
         assets = latest_release["assets"]
         for asset in assets:
-            if asset["name"] == "tesseract.exe":  # Ищем только tesseract.exe
+            if asset["name"] == "tesseract.exe":
                 download_url = asset["browser_download_url"]
                 break
         webbrowser.open(download_url)
@@ -670,8 +683,8 @@ class ChatApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
 
-            pytesseract.tesseract_cmd = 'tesseract.exe'
-            self.tesseract_cmd = 'tesseract.exe'
+            self.tesseract_cmd = resource_path('tesseract.exe')
+            pytesseract.tesseract_cmd = self.tesseract_cmd
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
             self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
@@ -685,8 +698,10 @@ class ChatApp(ctk.CTk):
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
 
-            self.image = Image.open("icon.ico")
-            self.iconbitmap("icon.ico")
+            # Загрузка иконки через resource_path
+            icon_path = resource_path("icon.ico")
+            self.image = Image.open(icon_path)
+            self.iconbitmap(icon_path)
             self.menu = (
                 pystray.MenuItem("Открыть", self.show_window, default=True),
                 pystray.MenuItem("Закрыть", self.on_exit)
@@ -900,12 +915,15 @@ class ChatApp(ctk.CTk):
                 return {"response": response}
 
             # Статические файлы
-            app.mount("/static", StaticFiles(directory="static"), name="static")
+            # Исправляем путь к статическим файлам
+            static_dir = resource_path("static")
+            app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
             # Главная страница чата
             @app.get("/chat")
             def read_chat():
-                with open("static/chat.html", "r", encoding="utf-8") as file:
+                html_path = resource_path(os.path.join("static", "chat.html"))
+                with open(html_path, "r", encoding="utf-8") as file:
                     return HTMLResponse(content=file.read())
 
             config = uvicorn.Config(app, host=self.local_ip, port=8000, log_level="info")
@@ -987,6 +1005,7 @@ class ChatApp(ctk.CTk):
 
     def recognize_text(self):
         try:
+            # Проверяем наличие tesseract через resource_path
             if os.path.exists(self.tesseract_cmd):
 
                 image_path = filedialog.askopenfilename(title="Выберите изображение",
@@ -1020,8 +1039,10 @@ class ChatApp(ctk.CTk):
                                          get_select_image_message_errors(app.isTranslate))
             else:
                 ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
-                if ask ==True:
+                if ask == True:
                     download_tesserat()
+        except FileNotFoundError:
+            download_tesserat()  # Автоматическая загрузка
         except Exception as e:
             # Получаем информацию об ошибке
             error_message = f"{get_text_recognition_error_message(app.isTranslate)}\n{str(e)}\n\n"
@@ -1057,7 +1078,8 @@ class ChatApp(ctk.CTk):
             pystray.MenuItem("API Mode", self.toggle_api_mode()),
             pystray.MenuItem("Закрыть", self.on_exit)
         )
-        image = Image.open("icon.ico")
+        # Используем resource_path для иконки
+        image = Image.open(resource_path("icon.ico"))
         self.tray_icon = pystray.Icon("name", image, "AI Chat", menu)
 
     def hide_window(self):
