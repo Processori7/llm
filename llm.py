@@ -16,7 +16,7 @@ import threading
 import uvicorn
 import socket
 
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, OOAi, Qwenlm, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, Qwenlm, WEBS as w
 from webscout import Marcus, AskMyAI
 from freeGPT import Client
 from datetime import datetime
@@ -34,7 +34,7 @@ from fastapi.responses import HTMLResponse
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.42"
+CURRENT_VERSION = "1.43"
 
 prompt = """###INSTRUCTIONS###
 
@@ -140,19 +140,6 @@ def communicate_with_Qwenlm(user_input, model):
 def communicate_with_Netwrck(user_input, model):
     try:
         ai = Netwrck(model=model)
-        response = ai.chat(user_input, stream=True)
-        full_response = ""
-
-        for chunk in response:
-            full_response += chunk
-
-        return full_response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_OOAi(user_input):
-    try:
-        ai = OOAi()
         response = ai.chat(user_input, stream=True)
         full_response = ""
 
@@ -339,130 +326,129 @@ model_functions = {
 "Bing(Balanced)": lambda user_input: communicate_with_Bing(user_input, "Balanced"),
 "Bing(Creative)": lambda user_input: communicate_with_Bing(user_input, "Creative"),
 "Bing(Precise)": lambda user_input: communicate_with_Bing(user_input, "Precise"),
-"GPT-4o": lambda user_input: communicate_with_Julius(user_input),
+"GPT-4o(Julius)": lambda user_input: communicate_with_Julius(user_input),
 "gpt-4o(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
 "gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RubiksAi(user_input, "gpt-4o-mini"),
-"Gpt-4": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4"),
-"Gpt-4-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-0613"),
-"Gpt-4-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
-"Gpt-4o-mini-2024-07-18": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
-"gpt-4o": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o"),
+"Gpt-4(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4"),
+"Gpt-4-0613(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-0613"),
+"Gpt-4-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
+"Gpt-4o-mini-2024-07-18(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
+"gpt-4o(ChatGPTES)": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o"),
 "Gpt-4o(Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4o"),
-"gpt-4o-mini": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o-mini"),
-"chatgpt-4o-latest": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
-"Gpt-4o1-mini": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
-"Gpt-4o1-preview": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
+"gpt-4o-mini(ChatGPTES)": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o-mini"),
+"chatgpt-4o-latest(ChatGPTES)": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
+"Gpt-4o1-mini(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
+"Gpt-4o1-preview(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
 "Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
-"Nemotron-4-340B-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
+"Nemotron-4-340B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
 "Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
 "BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
-"gpt4mini": lambda user_input: communicate_with_Netwrck(user_input, "gpt4mini"),
-"llama-3.1-lumimaid-8b": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
-"grok-2": lambda user_input: communicate_with_Netwrck(user_input, "grok"),
-"claude-3.5-sonnet:beta": lambda user_input: communicate_with_Netwrck(user_input, "claude"),
-"l3-euryale-70b": lambda user_input: communicate_with_Netwrck(user_input, "euryale"),
-"mythomax-l2-13b": lambda user_input: communicate_with_Netwrck(user_input, "mythomax"),
-"gemini-pro-1.5": lambda user_input: communicate_with_Netwrck(user_input, "gemini"),
-"llama-3.1-lumimaid-70b": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid70b"),
-"llama-3.1-nemotron-70b": lambda user_input: communicate_with_Netwrck(user_input, "nemotron"),
-"openai-o1": lambda user_input: communicate_with_YouChat(user_input, "openai_o1"),
-"openai-o1-mini": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_mini"),
-"gpt-4o-mini You": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o_mini"),
-"gpt-4o You": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o"),
-"gpt-4-turbo": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_turbo"),
-"gpt-4": lambda user_input: communicate_with_YouChat(user_input, "gpt_4"),
-"claude-3.5-sonnet": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_sonnet"),
-"claude-3-opus": lambda user_input: communicate_with_YouChat(user_input, "claude_3_opus"),
-"claude-3-sonnet": lambda user_input: communicate_with_YouChat(user_input, "claude_3_sonnet"),
-"claude-3.5-haiku": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_haiku"),
-"claude-3-haiku": lambda user_input: communicate_with_YouChat(user_input, "claude_3_haiku"),
-"llama3-3.70b": lambda user_input: communicate_with_YouChat(user_input, "llama3_3_70b"),
-"llama3-2.90b": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_90b"),
-"llama3-2.11b": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_11b"),
-"llama3-1.405b": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_405b"),
-"llama3-1.70b": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_70b"),
-"llama3": lambda user_input: communicate_with_YouChat(user_input, "llama3"),
-"mistral-large-2": lambda user_input: communicate_with_YouChat(user_input, "mistral_large_2"),
-"gemini-1.5-flash": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
-"gemini-1.5-pro": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
-"databricks-dbrx-instruct": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
-"qwen2.5-72b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
-"qwen2.5-coder-32b": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
-"qwen2.5-coder-32b-instruct":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct"),
-"qwen-plus-latest":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest"),
-"qvq-72b-preview":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview"),
-"qvq-32b-preview":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview"),
-"qwen-vl-max-latest":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest"),
-"command-r": lambda user_input: communicate_with_YouChat(user_input, "command_r"),
-"command-r-plus": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
-"solar-1-mini": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
-"dolphin-2.5": lambda user_input: communicate_with_YouChat(user_input, "dolphin_2_5"),
+"gpt4mini(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gpt4mini"),
+"llama-3.1-lumimaid-8b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
+"grok-2(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "grok"),
+"claude-3.5-sonnet(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "claude"),
+"l3-euryale-70b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "euryale"),
+"mythomax-l2-13b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "mythomax"),
+"gemini-pro-1.5(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gemini"),
+"llama-3.1-lumimaid-70b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid70b"),
+"llama-3.1-nemotron-70b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "nemotron"),
+"openai-o1(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1"),
+"openai-o1-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_mini"),
+"gpt-4o-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o_mini"),
+"gpt-4o(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o"),
+"gpt-4-turbo(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_turbo"),
+"gpt-4(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4"),
+"claude-3.5-sonnet(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_sonnet"),
+"claude-3-opus(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_opus"),
+"claude-3-sonnet(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_sonnet"),
+"claude-3.5-haiku(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_haiku"),
+"claude-3-haiku(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_haiku"),
+"llama3-3.70b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_3_70b"),
+"llama3-2.90b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_90b"),
+"llama3-2.11b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_11b"),
+"llama3-1.405b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_405b"),
+"llama3-1.70b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_70b"),
+"llama3(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3"),
+"mistral-large-2(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "mistral_large_2"),
+"gemini-1.5-flash(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
+"gemini-1.5-pro(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
+"databricks-dbrx-instruct(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
+"qwen2.5-72b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
+"qwen2.5-coder-32b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
+"qwen2.5-coder-32b-instruct(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct"),
+"qwen-plus-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest"),
+"qvq-72b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview"),
+"qvq-32b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview"),
+"qwen-vl-max-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest"),
+"command-r(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r"),
+"command-r-plus(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
+"solar-1-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
+"dolphin-2.5(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "dolphin_2_5"),
 "KoboldAI": communicate_with_KoboldAI,
-"OOAi":communicate_with_OOAi,
 "Phind": communicate_with_Phind,
 "Felo": communicate_with_Felo,
 "Bagoodex":communicate_with_Bagoodex,
 "TurboSeek":communicate_with_TurboSeek,
 "Marcus":communicate_with_Marcus,
 "AskMyAI":communicate_with_AskMyAI,
-"Chatgpt-4o-latest": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
-"Claude-3-haiku-20240307": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
-"Claude-3-sonnet-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
-"Claude-3-sonnet": lambda user_input: communicate_with_Amigo(user_input, "claude-3-sonnet-20240229"),
-"Claude-3-5-sonnet-20240620": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
-"Claude-sonnet-3.5": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-sonnet-3.5"),
-"Claude-3-opus-20240229": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
-"Gpt-3.5-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
-"Gpt-3.5-turbo-0125": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
-"Gpt-3.5-turbo-1106": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
-"Gpt-3.5-turbo-16k": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k"),
-"Gpt-3.5-turbo-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0613"),
-"Gpt-3.5-turbo-16k-0613": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k-0613"),
-"Llama-3-70b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat"),
-"Llama-3-70b-chat-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-turbo"),
-"Llama-3-8b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat"),
-"Llama-3-8b-chat-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-turbo"),
-"Llama-3-70b-chat-lite": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-lite"),
-"Llama-3-8b-chat-lite": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-lite"),
-"Llama-2-13b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-2-13b-chat"),
-"Llama-3.1-405b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-405b-turbo"),
+"Chatgpt-4o-latest(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
+"Claude-3-haiku-20240307(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
+"Claude-3-sonnet-20240229(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
+"Claude-3-sonnet(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "claude-3-sonnet-20240229"),
+"Claude-3-5-sonnet-20240620(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
+"Claude-sonnet-3.5(BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-sonnet-3.5"),
+"Claude-3-opus-20240229(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
+"Gpt-3.5-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
+"Gpt-3.5-turbo-0125(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
+"Gpt-3.5-turbo-1106(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
+"Gpt-3.5-turbo-16k(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k"),
+"Gpt-3.5-turbo-0613(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0613"),
+"Gpt-3.5-turbo-16k-0613(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k-0613"),
+"Llama-3-70b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat"),
+"Llama-3-70b-chat-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-turbo"),
+"Llama-3-8b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat"),
+"Llama-3-8b-chat-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-turbo"),
+"Llama-3-70b-chat-lite(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-lite"),
+"Llama-3-8b-chat-lite(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-lite"),
+"Llama-2-13b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-2-13b-chat"),
+"Llama-3.1-405b-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-405b-turbo"),
 "Llama-3.1-405B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"),
 "Llama-3.2-90B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo"),
-"Llama-3.1-70b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-70b-turbo"),
-"Llama-3.1-8b-turbo": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-8b-turbo"),
-"LlamaGuard-2-8b": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),
-"Llama-Guard-7b": lambda user_input: communicate_with_DiscordRocks(user_input, "Llama-Guard-7b"),
-"Meta-Llama-Guard-3-8B": lambda user_input: communicate_with_DiscordRocks(user_input, "Meta-Llama-Guard-3-8B"),
-"Mixtral-8x7B-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-v0.1"),
-"Mixtral-8x7B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-Instruct-v0.1"),
-"Mixtral-8x22B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x22B-Instruct-v0.1"),
-"Mistral-7B-Instruct-v0.1": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.1"),
-"Mistral-7B-Instruct-v0.2": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.2"),
-"Mistral-7B-Instruct-v0.3": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.3"),
-"Qwen1.5-72B-Chat": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-72B-Chat"),
-"Qwen1.5-110B-Chat": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-110B-Chat"),
-"Qwen2-72B-Instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen2-72B-Instruct"),
-"Gemma-2b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2b-it"),
-"Dbrx-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "dbrx-instruct"),
-"Deepseek-coder-33b-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-coder-33b-instruct"),
-"Deepseek-llm-67b-chat": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-llm-67b-chat"),
-"Nous-Hermes-2-Mixtral-8x7B-DPO": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Mixtral-8x7B-DPO"),
-"Nous-Hermes-2-Yi-34B": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Yi-34B"),
-"WizardLM-2-8x22B": lambda user_input: communicate_with_DiscordRocks(user_input, "WizardLM-2-8x22B"),
-"CodeLlama-7b-Python": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-7b-Python"),
-"Snowflake-arctic-instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "snowflake-arctic-instruct"),
-"Solar-10.7B-Instruct-v1.0": lambda user_input: communicate_with_DiscordRocks(user_input, "SOLAR-10.7B-Instruct-v1.0"),
-"Stripedhyena-nous-7B": lambda user_input: communicate_with_DiscordRocks(user_input, "StripedHyena-Nous-7B"),
-"CodeLlama-13b-Instruct": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-13b-Instruct"),
-"Mythomax-L2-13b": lambda user_input: communicate_with_DiscordRocks(user_input, "MythoMax-L2-13b"),
-"Gemma-2-9b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-9b-it"),
-"Gemma-2-27b-it": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-27b-it"),
-"Gemini-1.5-flash": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-flash"),
-"Gemini-1.5-pro": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-pro"),
+"Llama-3.1-70b-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-70b-turbo"),
+"Llama-3.1-8b-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-8b-turbo"),
+"LlamaGuard-2-8b(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),
+"Llama-Guard-7b(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Llama-Guard-7b"),
+"Meta-Llama-Guard-3-8B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Meta-Llama-Guard-3-8B"),
+"Mixtral-8x7B-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-v0.1"),
+"Mixtral-8x7B-Instruct-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-Instruct-v0.1"),
+"Mixtral-8x22B-Instruct-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x22B-Instruct-v0.1"),
+"Mistral-7B-Instruct-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.1"),
+"Mistral-7B-Instruct-v0.2(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.2"),
+"Mistral-7B-Instruct-v0.3(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.3"),
+"Qwen1.5-72B-Chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-72B-Chat"),
+"Qwen1.5-110B-Chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-110B-Chat"),
+"Qwen2-72B-Instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen2-72B-Instruct"),
+"Gemma-2b-it(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2b-it"),
+"Dbrx-instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "dbrx-instruct"),
+"Deepseek-coder-33b-instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-coder-33b-instruct"),
+"Deepseek-llm-67b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-llm-67b-chat"),
+"Nous-Hermes-2-Mixtral-8x7B-DPO(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Mixtral-8x7B-DPO"),
+"Nous-Hermes-2-Yi-34B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Yi-34B"),
+"WizardLM-2-8x22B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "WizardLM-2-8x22B"),
+"CodeLlama-7b-Python(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-7b-Python"),
+"Snowflake-arctic-instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "snowflake-arctic-instruct"),
+"Solar-10.7B-Instruct-v1.0(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "SOLAR-10.7B-Instruct-v1.0"),
+"Stripedhyena-nous-7B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "StripedHyena-Nous-7B"),
+"CodeLlama-13b-Instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-13b-Instruct"),
+"Mythomax-L2-13b(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "MythoMax-L2-13b"),
+"Gemma-2-9b-it(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-9b-it"),
+"Gemma-2-27b-it(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-27b-it"),
+"Gemini-1.5-flash(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-flash"),
+"Gemini-1.5-pro(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-pro"),
 "Gemini-1.5-pro(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "gemini-1.5-pro"),
 "Gemini-1-5-flash(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "gemini-1-5-flash"),
-"Sparkdesk": lambda user_input: communicate_with_DiscordRocks(user_input, "sparkdesk"),
-"Cosmosrp": lambda user_input: communicate_with_DiscordRocks(user_input, "cosmosrp"),
+"Sparkdesk(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "sparkdesk"),
+"Cosmosrp(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "cosmosrp"),
 "Reflection-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "mattshumer/Reflection-Llama-3.1-70B"),
 "Llama 3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
 "Llama-3.1-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
@@ -470,44 +456,34 @@ model_functions = {
 "Llama-3.1-Nemotron-70B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Llama-3.1-Nemotron-70B-Instruct"),
 "Llama-3.2-90B-Vision-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct"),
 "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
-"Meta-Llama-3.1-405B": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
-"Llama-3.2-90B-Vision-Instruct": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct"),
-"Mixtral-8x7b": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
-"Mixtral-8x22B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
+"Meta-Llama-3.1-405B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
+"Mixtral-8x7b(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
+"Mixtral-8x22B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
 "WizardLM-2-8x22B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
-"Mixtral-8x7B": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
-"Dolphin-2.6-mixtral-8x7b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
-"Dolphin-2.9.1-llama-3-70b": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
-"L3-70B-Euryale-v2.1": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
-"Phi-3-medium-4k-instruct": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
-"MiniCPM-Llama3-V-2_5(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
-"Llava-1.5-7b-hf(Photo Analyze)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
-"Emi_img":lambda user_input: communicate_with_NexraImager(user_input, "emi"),
-"Stablediffusion-1.5_img":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-1.5"),
-"Stablediffusion-2.1_img":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-2.1"),
-"Sdxl-lora_img":lambda user_input: communicate_with_NexraImager(user_input, "sdxl-lora"),
-"Dalle_img":lambda user_input: communicate_with_NexraImager(user_input, "dalle"),
-"Dalle2_img":lambda user_input: communicate_with_NexraImager(user_input, "dalle2"),
-"Dalle-mini_img":lambda user_input: communicate_with_NexraImager(user_input, "dalle-mini"),
-"DreamshaperXL10_alpha2_img":lambda user_input: communicate_with_NexraImager(user_input, "dreamshaperXL10_alpha2.safetensors [c8afe2ef]"),
-"DynavisionXL_0411_img":lambda user_input: communicate_with_NexraImager(user_input, "dynavisionXL_0411.safetensors [c39cc051]"),
-"JuggernautXL_v45_img":lambda user_input: communicate_with_NexraImager(user_input, "juggernautXL_v45.safetensors [e75f5471]"),
-"RealismEngineSDXL_v10_img":lambda user_input: communicate_with_NexraImager(user_input, "realismEngineSDXL_v10.safetensors [af771c3f]"),
-"Sd_xl_base_1.0_img":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0.safetensors [be9edd61]"),
-"AnimagineXLV3_v30_img":lambda user_input: communicate_with_NexraImager(user_input, "animagineXLV3_v30.safetensors [75f2f05b]"),
-"Sd_xl_base_1.0_inpainting_0.1_img":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0_inpainting_0.1.safetensors [5679a81a]"),
-"TurbovisionXL_v431_img":lambda user_input: communicate_with_NexraImager(user_input, "turbovisionXL_v431.safetensors [78890989]"),
-"Devlishphotorealism_sdxl15_img":lambda user_input: communicate_with_NexraImager(user_input, "devlishphotorealism_sdxl15.safetensors [77cba69f]"),
-"RealvisxlV40_img":lambda user_input: communicate_with_NexraImager(user_input, "realvisxlV40.safetensors [f7fdcb51]"),
-# "FLUX-1-dev_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-dev"),
-# "FLUX-1-schnell_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "black-forest-labs/FLUX-1-schnell"),
-# "Stable-diffusion-2-1_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stabilityai/stable-diffusion-2-1"),
-# "Stable-diffusion-v1-5_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "runwayml/stable-diffusion-v1-5"),
-# "Stable-diffusion-v1-4_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "CompVis/stable-diffusion-v1-4"),
-# "Deliberate_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "XpucT/Deliberate"),
-# "Openjourney_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "prompthero/openjourney"),
-# "Sdxl_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "stability-ai/sdxl"),
-# "Custom-diffusion_img":lambda user_input: communicate_with_DeepInfraImager(user_input, "uwulewd/custom-diffusion"),
+"Mixtral-8x7B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
+"Dolphin-2.6-mixtral-8x7b(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
+"Dolphin-2.9.1-llama-3-70b(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
+"L3-70B-Euryale-v2.1(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
+"Phi-3-medium-4k-instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
+"MiniCPM-Llama3-V-2_5(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
+"Llava-1.5-7b-hf(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
+"Emi_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "emi"),
+"Stablediffusion-1.5_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-1.5"),
+"Stablediffusion-2.1_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-2.1"),
+"Sdxl-lora_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "sdxl-lora"),
+"Dalle_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dalle"),
+"Dalle2_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dalle2"),
+"Dalle-mini_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dalle-mini"),
+"DreamshaperXL10_alpha2_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dreamshaperXL10_alpha2.safetensors [c8afe2ef]"),
+"DynavisionXL_0411_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dynavisionXL_0411.safetensors [c39cc051]"),
+"JuggernautXL_v45_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "juggernautXL_v45.safetensors [e75f5471]"),
+"RealismEngineSDXL_v10_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "realismEngineSDXL_v10.safetensors [af771c3f]"),
+"Sd_xl_base_1.0_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0.safetensors [be9edd61]"),
+"AnimagineXLV3_v30_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "animagineXLV3_v30.safetensors [75f2f05b]"),
+"Sd_xl_base_1.0_inpainting_0.1_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0_inpainting_0.1.safetensors [5679a81a]"),
+"TurbovisionXL_v431_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "turbovisionXL_v431.safetensors [78890989]"),
+"Devlishphotorealism_sdxl15_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "devlishphotorealism_sdxl15.safetensors [77cba69f]"),
+"RealvisxlV40_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "realvisxlV40.safetensors [f7fdcb51]"),
 "BlackboxAIImager_img":lambda user_input: communicate_with_BlackboxAIImager(user_input),
 "Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
 "Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")
@@ -703,6 +679,8 @@ class ChatApp(ctk.CTk):
             self.server_process = None
             self.uvicorn_server = None
             self.api_running = False
+            self.tray_icon = None
+            self.tray_icon_thread = None  # Добавляем явную инициализацию
             self.local_ip = self.get_local_ip()
 
             self.title("AI Chat")
@@ -1073,20 +1051,35 @@ class ChatApp(ctk.CTk):
         # Устанавливаем активный виджет
         self.active_widget = event.widget
 
-    def hide_window(self):
-        # Скрываем окно
-        hwnd = ctypes.windll.user32.FindWindowW(None, self.title())
-        ctypes.windll.user32.ShowWindow(hwnd, 0)  # 0 - SW_HIDE
-        self.icon.run_detached()  # Запускаем иконку в отдельном потоке
+    def create_tray_icon(self):
+        """Создает новый экземпляр иконки трея"""
+        menu = (
+            pystray.MenuItem("Открыть", self.show_window, default=True),
+            pystray.MenuItem("Api Mode", self.toggle_api_mode),
+            pystray.MenuItem("Закрыть", self.on_exit)
+        )
+        image = Image.open("icon.ico")
+        self.tray_icon = pystray.Icon("name", image, "AI Chat", menu)
 
+    def hide_window(self):
+        """Скрытие окна в трей"""
+        self.withdraw()
+        if self.tray_icon_thread is None or not self.tray_icon_thread.is_alive():
+            self.create_tray_icon()
+            self.tray_icon_thread = threading.Thread(
+                target=self.tray_icon.run,
+                daemon=True)
+            self.tray_icon_thread.start()
     def show_window(self):
-        # Показываем окно
-        hwnd = ctypes.windll.user32.FindWindowW(None, self.title())
-        ctypes.windll.user32.ShowWindow(hwnd, 5)  # 5 - SW_SHOW
-        ctypes.windll.user32.SetForegroundWindow(hwnd)  # Устанавливаем окно на передний план
-        # self.after(0, self.deiconify)
+        """Восстановление окна из трея"""
+        if self.tray_icon:
+            self.tray_icon.stop()  # Останавливаем текущую иконку
+        self.deiconify()
+        self.attributes('-topmost', 1)
+        self.attributes('-topmost', 0)
 
     def on_exit(self):
+        """Полное закрытие приложения"""
         os._exit(0)
 
     def send_message(self, event=None):
