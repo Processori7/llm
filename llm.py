@@ -8,7 +8,6 @@ import tkinter.font as tkFont
 import customtkinter as ctk
 import tkinter as tk
 import pystray
-import ctypes
 import cv2
 import traceback
 import speech_recognition as sr
@@ -1055,7 +1054,7 @@ class ChatApp(ctk.CTk):
         """Создает новый экземпляр иконки трея"""
         menu = (
             pystray.MenuItem("Открыть", self.show_window, default=True),
-            pystray.MenuItem("Api Mode", self.toggle_api_mode),
+            pystray.MenuItem("API Mode", self.toggle_api_mode()),
             pystray.MenuItem("Закрыть", self.on_exit)
         )
         image = Image.open("icon.ico")
