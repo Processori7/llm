@@ -15,7 +15,7 @@
   },
   {
    "optionDest": "console",
-   "value": true
+   "value": false
   },
   {
    "optionDest": "icon_file",
@@ -32,6 +32,10 @@
   {
    "optionDest": "noupx",
    "value": false
+  },
+  {
+   "optionDest": "hide_console",
+   "value": "hide-early"
   },
   {
    "optionDest": "disable_windowed_traceback",
@@ -75,14 +79,6 @@
   },
   {
    "optionDest": "hiddenimports",
-   "value": "tldextract"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "tiktoken"
-  },
-  {
-   "optionDest": "hiddenimports",
    "value": "markdownify"
   },
   {
@@ -115,15 +111,7 @@
   },
   {
    "optionDest": "hiddenimports",
-   "value": "Helpingai_T2"
-  },
-  {
-   "optionDest": "hiddenimports",
    "value": "httpx"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "Bard"
   },
   {
    "optionDest": "hiddenimports",
@@ -228,6 +216,14 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pydantic;pydantic/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/tesseract.exe;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/static;static/"
   }
  ],
  "nonPyinstallerOptions": {

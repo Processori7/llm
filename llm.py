@@ -83,23 +83,23 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def download_tesserat():
-    try:
-        # Получение информации о последнем релизе на GitHub
-        response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
-        response.raise_for_status()
-        latest_release = response.json()
-
-        # Получение ссылки на файл tesseract.exe
-        download_url = None
-        assets = latest_release["assets"]
-        for asset in assets:
-            if asset["name"] == "tesseract.exe":
-                download_url = asset["browser_download_url"]
-                break
-        webbrowser.open(download_url)
-    except requests.exceptions.RequestException as e:
-        messagebox.showerror("Tesseract error", str(e))
+# def download_tesserat():
+#     try:
+#         # Получение информации о последнем релизе на GitHub
+#         response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
+#         response.raise_for_status()
+#         latest_release = response.json()
+#
+#         # Получение ссылки на файл tesseract.exe
+#         download_url = None
+#         assets = latest_release["assets"]
+#         for asset in assets:
+#             if asset["name"] == "tesseract.exe":
+#                 download_url = asset["browser_download_url"]
+#                 break
+#         webbrowser.open(download_url)
+#     except requests.exceptions.RequestException as e:
+#         messagebox.showerror("Tesseract error", str(e))
 
 def update_app(update_url):
    webbrowser.open(update_url)
@@ -920,6 +920,8 @@ class ChatApp(ctk.CTk):
                 with open(html_path, "r", encoding="utf-8") as file:
                     return HTMLResponse(content=file.read())
 
+            sys.stdout = open('server_log.txt', 'w')
+            sys.stderr = sys.stdout
             config = uvicorn.Config(app, host=self.local_ip, port=8000, log_level="info")
             self.uvicorn_server = uvicorn.Server(config=config)
             self.uvicorn_server.run()
@@ -936,6 +938,11 @@ class ChatApp(ctk.CTk):
             self.uvicorn_server.should_exit = True
             self.uvicorn_server.force_exit = True
         self.api_running = False
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
+        sys.stderr.close()
+        sys.stderr = sys.__stderr__
+        os.remove('server_log.txt')
         self.api_mode_button.configure(text="API Mode")
 
     def toggle_recognition(self):
@@ -1029,12 +1036,12 @@ class ChatApp(ctk.CTk):
                 else:
                     messagebox.showerror(get_image_title_errors(app.isTranslate),
                                          get_select_image_message_errors(app.isTranslate))
-            else:
-                ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
-                if ask == True:
-                    download_tesserat()
-        except FileNotFoundError:
-            download_tesserat()  # Автоматическая загрузка
+        #     else:
+        #         ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
+        #         if ask == True:
+        #             download_tesserat()
+        # except FileNotFoundError:
+        #     download_tesserat()  # Автоматическая загрузка
         except Exception as e:
             # Получаем информацию об ошибке
             error_message = f"{get_text_recognition_error_message(app.isTranslate)}\n{str(e)}\n\n"
