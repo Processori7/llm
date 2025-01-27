@@ -6,7 +6,7 @@
 - Смена темы на светлую  
 - Смена языка на английский и обратно на русский  
 - Поиск LLM  
-- Распознавание текста с фото на русском и английском языке - внимание, необходимо скачать tesseract.exe, он находится в релизах, вместе с исполняемым файлом llm.exe  
+- Распознавание текста с фото на русском и английском языке - внимание, необходимо скачать tesseract.exe, он находится в релизах, вместе с исполняемым файлом llm.exe для старых версий. Начиная с версии 1.43 это не требуется.
 - Голосовой ввод
 - Очистка чата
 - Возможность использовать режим API - при активации открывается страница, ссылку на неё можно отправить другим пользовать и использовать чат в локальной сети, также доступна страница со Swagger
@@ -35,7 +35,7 @@ This is an application that allows you to use free services from the Webscout pa
 - Changing the theme to a light one  
 - Change the language to English and back to Russian  
 - LLM Search  
-- Recognition of text from photos in Russian and English - attention, you need to download tesseract.exe it is in the releases, along with the executable file. llm.exe  
+- Text recognition from photos in Russian and English - attention, you need to download tesseract.exe it is in the releases, along with the executable file. llm.exe for older versions. Starting from version 1.43, this is not required.
 - Voice input
 - Clearing the chat
 - The ability to use API mode - upon activation, a page opens, a link to it can be sent to others to use and use chat on the local network, a page with Swagger is also available
