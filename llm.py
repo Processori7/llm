@@ -684,7 +684,7 @@ class ChatApp(ctk.CTk):
             ctk.set_default_color_theme("green")
 
             self.tesseract_cmd = resource_path('tesseract.exe')
-            pytesseract.tesseract_cmd = self.tesseract_cmd
+            pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
             self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
@@ -702,11 +702,6 @@ class ChatApp(ctk.CTk):
             icon_path = resource_path("icon.ico")
             self.image = Image.open(icon_path)
             self.iconbitmap(icon_path)
-            self.menu = (
-                pystray.MenuItem("Открыть", self.show_window, default=True),
-                pystray.MenuItem("Закрыть", self.on_exit)
-            )
-            self.icon = pystray.Icon("name", self.image, "Free Ai Services", self.menu)
 
             # Привязываем событие закрытия окна
             self.protocol("WM_DELETE_WINDOW", self.hide_window)
@@ -915,7 +910,6 @@ class ChatApp(ctk.CTk):
                 return {"response": response}
 
             # Статические файлы
-            # Исправляем путь к статическим файлам
             static_dir = resource_path("static")
             app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
@@ -930,7 +924,7 @@ class ChatApp(ctk.CTk):
             self.uvicorn_server = uvicorn.Server(config=config)
             self.uvicorn_server.run()
 
-        self.server_process = threading.Thread(target=run_fastapi_app)
+        self.server_process = threading.Thread(target=run_fastapi_app, daemon=True)
         self.server_process.start()
         server_url = f"http://{self.local_ip}:8000/chat"
         webbrowser.open(server_url)
@@ -938,11 +932,9 @@ class ChatApp(ctk.CTk):
         self.api_mode_button.configure(text="Stop API Mode")
 
     def stop_api_mode(self):
-        if self.uvicorn_server is not None:
+        if self.uvicorn_server:
             self.uvicorn_server.should_exit = True
             self.uvicorn_server.force_exit = True
-            self.uvicorn_server.shutdown()
-            self.uvicorn_server = None
         self.api_running = False
         self.api_mode_button.configure(text="API Mode")
 
@@ -1073,11 +1065,19 @@ class ChatApp(ctk.CTk):
 
     def create_tray_icon(self):
         """Создает новый экземпляр иконки трея"""
-        menu = (
-            pystray.MenuItem("Открыть", self.show_window, default=True),
-            pystray.MenuItem("API Mode", self.toggle_api_mode()),
-            pystray.MenuItem("Закрыть", self.on_exit)
-        )
+        if not self.isTranslate:
+
+            menu = (
+                pystray.MenuItem("Открыть", self.show_window, default=True),
+                pystray.MenuItem("API Mode", self.toggle_api_mode),
+                pystray.MenuItem("Закрыть", self.on_exit)
+            )
+        else:
+            menu = (
+                pystray.MenuItem("Open", self.show_window, default=True),
+                pystray.MenuItem("API Mode", self.toggle_api_mode),
+                pystray.MenuItem("Close", self.on_exit)
+            )
         # Используем resource_path для иконки
         image = Image.open(resource_path("icon.ico"))
         self.tray_icon = pystray.Icon("name", image, "AI Chat", menu)
