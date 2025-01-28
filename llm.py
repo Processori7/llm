@@ -34,7 +34,7 @@ from fastapi.responses import HTMLResponse
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.43"
+CURRENT_VERSION = "1.44"
 
 prompt = """###INSTRUCTIONS###
 
@@ -82,25 +82,6 @@ def resource_path(relative_path):
     # print(os.path.join(base_path, relative_path))
     return os.path.join(base_path, relative_path)
 
-
-# def download_tesserat():
-#     try:
-#         # Получение информации о последнем релизе на GitHub
-#         response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
-#         response.raise_for_status()
-#         latest_release = response.json()
-#
-#         # Получение ссылки на файл tesseract.exe
-#         download_url = None
-#         assets = latest_release["assets"]
-#         for asset in assets:
-#             if asset["name"] == "tesseract.exe":
-#                 download_url = asset["browser_download_url"]
-#                 break
-#         webbrowser.open(download_url)
-#     except requests.exceptions.RequestException as e:
-#         messagebox.showerror("Tesseract error", str(e))
-
 def update_app(update_url):
    webbrowser.open(update_url)
 
@@ -140,9 +121,10 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
-def communicate_with_Qwenlm(user_input, model):
+def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
     try:
         ai = Qwenlm(timeout=5000)
+        ai.chat_type=chat_type
         ai.model = model
         response = ai.chat(user_input, stream=False)
         return response
@@ -387,11 +369,16 @@ model_functions = {
 "databricks-dbrx-instruct(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
 "qwen2.5-72b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
 "qwen2.5-coder-32b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
-"qwen2.5-coder-32b-instruct(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct"),
-"qwen-plus-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest"),
-"qvq-72b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview"),
-"qvq-32b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview"),
-"qwen-vl-max-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest"),
+"qwen2.5-coder-32b-instruct(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct", "t2t"),
+"qwen-plus-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "t2t"),
+"qwen-turbo-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "t2t"),
+"qvq-72b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "t2t"),
+"qvq-32b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "t2t"),
+"qwen-vl-max-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest", "t2t"),
+"qwen-plus-latest_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "search"),
+"qwen-turbo-latest_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "search"),
+"qvq-72b-preview_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
+"qvq-32b-preview_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
 "command-r(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r"),
 "command-r-plus(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
 "solar-1-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
@@ -734,6 +721,7 @@ class ChatApp(ctk.CTk):
             self.model_combobox.pack(side="left", padx=5)
             self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
 
+
             # Создаем новый фрейм для выбора категории
             self.category_frame = ctk.CTkFrame(self.input_frame)
             self.category_frame.pack(side="top", padx=6)  # Устанавливаем фрейм ниже
@@ -746,7 +734,7 @@ class ChatApp(ctk.CTk):
             self.category_var = tk.StringVar()
             self.category_combobox = ctk.CTkOptionMenu(self.category_frame, variable=self.category_var,
                                                        font=("Consolas", 16),
-                                                       values=["All", "Text", "Img", "Photo Analyze"],
+                                                       values=["All", "Text", "Img", "Photo Analyze", "Web"],
                                                        command=self.update_model_list)
             self.category_combobox.pack(side="left", padx=6)
 
@@ -1036,17 +1024,10 @@ class ChatApp(ctk.CTk):
                 else:
                     messagebox.showerror(get_image_title_errors(app.isTranslate),
                                          get_select_image_message_errors(app.isTranslate))
-        #     else:
-        #         ask = messagebox.askquestion("tesseract.exe", get_tesseract_not_found_messages(app.isTranslate))
-        #         if ask == True:
-        #             download_tesserat()
-        # except FileNotFoundError:
-        #     download_tesserat()  # Автоматическая загрузка
         except Exception as e:
             # Получаем информацию об ошибке
             error_message = f"{get_text_recognition_error_message(app.isTranslate)}\n{str(e)}\n\n"
             error_message +=traceback.format_exc()
-            # Показываем сообщение об ошибке
             messagebox.showerror("Error", error_message)
 
     def update_model_list(self, category):
@@ -1060,6 +1041,8 @@ class ChatApp(ctk.CTk):
             elif category == "Img" and model.endswith("_img"):
                 filtered_models.append(model)
             elif category == "Photo Analyze" and "(Photo Analyze)" in model:
+                filtered_models.append(model)
+            elif category == "Web" and "_Web" in model:
                 filtered_models.append(model)
 
         # Обновление комбобокса с моделями
