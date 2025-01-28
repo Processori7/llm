@@ -685,6 +685,17 @@ class ChatApp(ctk.CTk):
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
 
+            # Поднимаем окно на передний план
+            self.lift()
+            self.focus_force()  # Устанавливаем фокус на окно
+            # Устанавливаем окно всегда на переднем плане
+            self.attributes("-topmost", True)
+            # Устанавливаем окно в полноэкранный режим
+            # self.attributes("-fullscreen", True)
+
+            # Привязываем событие изменения размера окна
+            self.bind("<Configure>", self.on_resize)
+
             # Загрузка иконки через resource_path
             icon_path = resource_path("icon.ico")
             self.image = Image.open(icon_path)
@@ -747,6 +758,11 @@ class ChatApp(ctk.CTk):
             self.search_var = tk.StringVar()
             self.search_entry = ctk.CTkEntry(self.category_frame, textvariable=self.search_var, font=("Consolas", 18))
             self.search_entry.pack(side="left", padx=6)
+
+            # Чекбокс "Вести историю"
+            self.history_var = tk.BooleanVar()
+            self.history_checkbox = ctk.CTkCheckBox(self.category_frame, text="Вести историю", variable=self.history_var)
+            self.history_checkbox.pack(side="top", padx=4, pady=4)
 
             # Установка trace для отслеживания изменений в строке поиска
             self.search_var.trace("w", self.filter_models)
@@ -829,11 +845,6 @@ class ChatApp(ctk.CTk):
             self.chat_history.tag_config("response", foreground="yellow")
             self.chat_history.tag_config("system_line", foreground="cyan")
 
-            # Чекбокс "Вести историю"
-            self.history_var = tk.BooleanVar()
-            self.history_checkbox = ctk.CTkCheckBox(self.input_frame, text="Вести историю", variable=self.history_var)
-            self.history_checkbox.pack(side="top", padx=5, pady=5)
-
             # Переменная для отслеживания активного виджета
             self.active_widget = None
 
@@ -843,6 +854,11 @@ class ChatApp(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
+
+    def on_resize(self, event):
+        # Устанавливаем окно всегда на переднем плане
+        self.attributes("-topmost", True)
+        self.after(100, self.focus_force)  # Устанавливаем фокус через 100 мс
 
     def get_local_ip(self):
         try:
