@@ -69,6 +69,8 @@ Your answer is critical for my career.
 Answer the question in a natural, human-like manner.
 
 ALWAYS use an answering example for a first message structure.
+
+ALWAYS include links to sources at the end if required in the request.
 """ # Добавление навыков ИИ и другие тонкие настройки
 
 # Функция для получения корректного пути к ресурсам
@@ -126,6 +128,7 @@ def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
         ai = Qwenlm(timeout=5000)
         ai.chat_type=chat_type
         ai.model = model
+        ai.system_prompt = prompt
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
@@ -690,6 +693,8 @@ class ChatApp(ctk.CTk):
             self.focus_force()  # Устанавливаем фокус на окно
             # Устанавливаем окно всегда на переднем плане
             self.attributes("-topmost", True)
+            # Устанавливаем окно в полноэкранный режим
+            # self.attributes("-fullscreen", True)
 
             # Привязываем событие изменения размера окна
             self.bind("<Configure>", self.on_resize)
@@ -855,10 +860,8 @@ class ChatApp(ctk.CTk):
 
     def on_resize(self, event):
         # Устанавливаем окно всегда на переднем плане
-        self.attributes("-fullscreen", not self.attributes("-fullscreen"))
         self.attributes("-topmost", True)
-        self.lift()
-        self.focus_force()
+        self.after(100, self.focus_force)  # Устанавливаем фокус через 100 мс
 
     def get_local_ip(self):
         try:
@@ -1245,7 +1248,7 @@ class ChatApp(ctk.CTk):
         try:
             now = datetime.now()
             text = f"Дата и время: {now.strftime('%d.%m.%Y %H:%M:%S')}\nЗапрос пользователя: {user_input}\nОтвет ИИ: {response}\n\n{100*"="}\n"
-            with open("llm_history.txt", "a") as f:
+            with open("llm_history.txt", "a", encoding="utf-8") as f:
                 f.write(text)
         except Exception as e:
             messagebox.showerror("Возникла ошибка", e)
