@@ -1,4 +1,3 @@
-freeGPT
 webscout
 pillow
 ollama
@@ -27,3 +26,4 @@ pygetwindow
 uvicorn
 asyncio
 fastapi
+pyttsx3

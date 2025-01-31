@@ -34,10 +34,6 @@
    "value": false
   },
   {
-   "optionDest": "hide_console",
-   "value": "hide-early"
-  },
-  {
    "optionDest": "disable_windowed_traceback",
    "value": false
   },
@@ -224,6 +220,10 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/static;static/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/pyttsx3;pyttsx3/"
   }
  ],
  "nonPyinstallerOptions": {

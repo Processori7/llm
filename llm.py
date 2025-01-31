@@ -15,14 +15,13 @@ import speech_recognition as sr
 import threading
 import uvicorn
 import socket
+import pyttsx3
 
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, BlackboxAIImager, Bing, PhindSearch, DeepInfra, Julius, DARKAI, Bagoodex, RUBIKSAI, VLM, DiscordRocks, NexraImager, ChatGPTES, AmigoChat, TurboSeek, Netwrck, Qwenlm, WEBS as w
-from webscout import Marcus, AskMyAI
-from freeGPT import Client
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, Qwenlm, Marcus, WEBS as w
+from webscout import ArtbitImager
 from datetime import datetime
 from tkinter import messagebox, filedialog
 from PIL import Image
-from io import BytesIO
 from packaging import version
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -34,7 +33,7 @@ from fastapi.responses import HTMLResponse
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.44"
+CURRENT_VERSION = "1.45"
 
 prompt = """###INSTRUCTIONS###
 
@@ -72,6 +71,8 @@ ALWAYS use an answering example for a first message structure.
 
 ALWAYS include links to sources at the end if required in the request.
 """ # Добавление навыков ИИ и другие тонкие настройки
+
+img_folder = 'img'
 
 # Функция для получения корректного пути к ресурсам
 def resource_path(relative_path):
@@ -123,6 +124,58 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
+def get_Polinations_img_models():
+    model_functions = {}
+    try:
+        url = "https://image.pollinations.ai/models"
+        resp = requests.get(url)
+        if resp.ok:
+            models = resp.json()  # Получаем список строк
+            for name in models:  # Проходим по каждой строке
+                # Формируем ключ для словаря
+                key = f"(Polination) {name}_img"
+                # Добавляем в словарь с соответствующей лямбда-функцией
+                model_functions[key] = lambda user_input, model_name=name: gen_img(user_input, model_name)
+            return model_functions
+        else:
+            return f"{get_error_message(app.isTranslate)}: {resp.status_code}"
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+#Получаю все текстовые модели Polinations
+def get_Polinations_chat_models():
+    try:
+        url = "https://text.pollinations.ai/models"
+        resp = requests.get(url)
+        if resp.ok:
+            models = resp.json()
+            for model in models:
+                # Проверяем, является ли модель текстовой
+                if model.get("baseModel", False):
+                    model_name = model["name"]
+                    model_description = model["description"]
+                    # Формируем ключ для словаря
+                    key = f"{model_description} (Polination)"
+                    # Добавляем в словарь с соответствующей лямбда-функцией
+                    model_functions[key] = lambda user_input, model_name=model: communicate_with_Pollinations_chat(
+                        user_input, model_name)
+            return model_functions
+        else:
+            return f"{get_error_message(app.isTranslate)}: {resp.status_code}"
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+def communicate_with_Pollinations_chat(user_input, model):
+    try:
+        url = f"https://text.pollinations.ai/'{user_input}'?model={model}"
+        resp = requests.get(url)
+        if resp.ok:
+            return resp.text
+        else:
+            return f"{get_error_message(app.isTranslate)}: {resp.status_code}"
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
 def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
     try:
         ai = Qwenlm(timeout=5000)
@@ -160,14 +213,6 @@ def communicate_with_TurboSeek(user_input):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_AskMyAI(user_input):
-    try:
-        ai = AskMyAI()
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
 def communicate_with_Marcus(user_input):
     try:
         ai = Marcus()
@@ -193,59 +238,6 @@ def communicate_with_YouChat(user_input, model):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_Bagoodex(user_input):
-    try:
-        ai = Bagoodex()
-        response = ai.chat(user_input)
-        return response.encode('latin1').decode('utf-8')
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_Amigo(user_input, model):
-    try:
-        ai = AmigoChat()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_ChatGPTES(user_input, model):
-    try:
-        ai = ChatGPTES()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_Bing(user_input, model):
-    try:
-        ai = Bing()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_DiscordRocks(user_input, model):
-    try:
-        ai = DiscordRocks()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_RubiksAi(user_input, model):
-    try:
-        ai = RUBIKSAI()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
 def communicate_with_DarkAi(user_input, model):
     try:
         ai = DARKAI()
@@ -258,15 +250,6 @@ def communicate_with_DarkAi(user_input, model):
 def communicate_with_DuckDuckGO(user_input, model):
     try:
         response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_Julius(user_input):
-    try:
-        ai = Julius()
-        ai.model = "GPT-4o"
-        response = ai.chat(user_input)
         return response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
@@ -306,189 +289,71 @@ def communicate_with_Phind(user_input):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_DeepInfra(user_input, model):
-    try:
-        ai = DeepInfra()
-        ai.model=model
-        prompt = user_input
-        response = ai.ask(prompt)
-        # Извлекаем только content из ответа
-        content = response['choices'][0]['message']['content']
-        return content
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
 model_functions = {
-"GPT-4o-mini(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
-"Bing(Balanced)": lambda user_input: communicate_with_Bing(user_input, "Balanced"),
-"Bing(Creative)": lambda user_input: communicate_with_Bing(user_input, "Creative"),
-"Bing(Precise)": lambda user_input: communicate_with_Bing(user_input, "Precise"),
-"GPT-4o(Julius)": lambda user_input: communicate_with_Julius(user_input),
-"gpt-4o(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
-"gpt-4o-mini(RUBIKSAI)": lambda user_input: communicate_with_RubiksAi(user_input, "gpt-4o-mini"),
-"Gpt-4(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4"),
-"Gpt-4-0613(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-0613"),
-"Gpt-4-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4-turbo"),
-"Gpt-4o-mini-2024-07-18(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-4o-mini-2024-07-18"),
-"gpt-4o(ChatGPTES)": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o"),
-"Gpt-4o(Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4o"),
-"gpt-4o-mini(ChatGPTES)": lambda user_input: communicate_with_ChatGPTES(user_input, "gpt-4o-mini"),
-"chatgpt-4o-latest(ChatGPTES)": lambda user_input: communicate_with_ChatGPTES(user_input, "chatgpt-4o-latest"),
-"Gpt-4o1-mini(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "o1-mini"),
-"Gpt-4o1-preview(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "o1-preview"),
-"Claude-3-haiku(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
-"Nemotron-4-340B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Nemotron-4-340B-Instruct"),
-"Qwen2-72B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "Qwen/Qwen2-72B-Instruct"),
+"GPT-4o-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
+"gpt-4o (DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
+"Gpt-4o (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4o"),
+"Claude-3-haiku (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
-"gpt4mini(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gpt4mini"),
-"llama-3.1-lumimaid-8b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
-"grok-2(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "grok"),
-"claude-3.5-sonnet(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "claude"),
-"l3-euryale-70b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "euryale"),
-"mythomax-l2-13b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "mythomax"),
-"gemini-pro-1.5(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gemini"),
-"llama-3.1-lumimaid-70b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid70b"),
-"llama-3.1-nemotron-70b(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "nemotron"),
-"openai-o1(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1"),
-"openai-o1-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_mini"),
-"gpt-4o-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o_mini"),
-"gpt-4o(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o"),
-"gpt-4-turbo(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_turbo"),
-"gpt-4(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4"),
-"claude-3.5-sonnet(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_sonnet"),
-"claude-3-opus(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_opus"),
-"claude-3-sonnet(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_sonnet"),
-"claude-3.5-haiku(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_haiku"),
-"claude-3-haiku(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_haiku"),
-"llama3-3.70b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_3_70b"),
-"llama3-2.90b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_90b"),
-"llama3-2.11b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_11b"),
-"llama3-1.405b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_405b"),
-"llama3-1.70b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_70b"),
-"llama3(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3"),
-"mistral-large-2(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "mistral_large_2"),
-"gemini-1.5-flash(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
-"gemini-1.5-pro(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
-"databricks-dbrx-instruct(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
-"qwen2.5-72b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
-"qwen2.5-coder-32b(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
-"qwen2.5-coder-32b-instruct(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct", "t2t"),
-"qwen-plus-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "t2t"),
-"qwen-turbo-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "t2t"),
-"qvq-72b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "t2t"),
-"qvq-32b-preview(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "t2t"),
-"qwen-vl-max-latest(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest", "t2t"),
-"qwen-plus-latest_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "search"),
-"qwen-turbo-latest_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "search"),
-"qvq-72b-preview_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
-"qvq-32b-preview_Web(Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
+"gpt4mini (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gpt4mini"),
+"llama-3.1-lumimaid-8b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
+"grok-2 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "grok"),
+"claude-3.5-sonnet (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "claude"),
+"l3-euryale-70b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "euryale"),
+"mythomax-l2-13b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "mythomax"),
+"gemini-pro-1.5 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gemini"),
+"llama-3.1-lumimaid-70b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid70b"),
+"llama-3.1-nemotron-70b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "nemotron"),
+"openai-o1 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1"),
+"openai-o1-mini (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_mini"),
+"gpt-4o-mini (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o_mini"),
+"gpt-4o (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o"),
+"gpt-4-turbo (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_turbo"),
+"gpt-4 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4"),
+"claude-3.5-sonnet (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_sonnet"),
+"claude-3-opus (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_opus"),
+"claude-3-sonnet (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_sonnet"),
+"claude-3.5-haiku (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_haiku"),
+"claude-3-haiku (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_haiku"),
+"llama3-3.70b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_3_70b"),
+"llama3-2.90b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_90b"),
+"llama3-2.11b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_11b"),
+"llama3-1.405b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_405b"),
+"llama3-1.70b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_70b"),
+"llama3 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3"),
+"mistral-large-2 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "mistral_large_2"),
+"gemini-1.5-flash (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
+"gemini-1.5-pro (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
+"databricks-dbrx-instruct (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
+"qwen2.5-72b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
+"qwen2.5-coder-32b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
+"qwen2.5-coder-32b-instruct (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct", "t2t"),
+"qwen-plus-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "t2t"),
+"qwen-max-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "t2t"),
+"qwen-turbo-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "t2t"),
+"qvq-72b-preview (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "t2t"),
+"qvq-32b-preview (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "t2t"),
+"qwen-vl-max-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest", "t2t"),
+"qwen-plus-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "search"),
+"qwen-turbo-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "search"),
+"qwen-max-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
+"qvq-72b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
+"qvq-32b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
 "command-r(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r"),
 "command-r-plus(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
 "solar-1-mini(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
 "dolphin-2.5(YouChat)": lambda user_input: communicate_with_YouChat(user_input, "dolphin_2_5"),
 "KoboldAI": communicate_with_KoboldAI,
-"Phind": communicate_with_Phind,
-"Felo": communicate_with_Felo,
-"Bagoodex":communicate_with_Bagoodex,
-"TurboSeek":communicate_with_TurboSeek,
-"Marcus":communicate_with_Marcus,
-"AskMyAI":communicate_with_AskMyAI,
-"Chatgpt-4o-latest(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "chatgpt-4o-latest"),
-"Claude-3-haiku-20240307(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-haiku-20240307"),
-"Claude-3-sonnet-20240229(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-sonnet-20240229"),
-"Claude-3-sonnet(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "claude-3-sonnet-20240229"),
-"Claude-3-5-sonnet-20240620(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-5-sonnet-20240620"),
-"Claude-sonnet-3.5(BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-sonnet-3.5"),
-"Claude-3-opus-20240229(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "claude-3-opus-20240229"),
-"Gpt-3.5-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo"),
-"Gpt-3.5-turbo-0125(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0125"),
-"Gpt-3.5-turbo-1106(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-1106"),
-"Gpt-3.5-turbo-16k(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k"),
-"Gpt-3.5-turbo-0613(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-0613"),
-"Gpt-3.5-turbo-16k-0613(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gpt-3.5-turbo-16k-0613"),
-"Llama-3-70b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat"),
-"Llama-3-70b-chat-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-turbo"),
-"Llama-3-8b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat"),
-"Llama-3-8b-chat-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-turbo"),
-"Llama-3-70b-chat-lite(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-70b-chat-lite"),
-"Llama-3-8b-chat-lite(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3-8b-chat-lite"),
-"Llama-2-13b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-2-13b-chat"),
-"Llama-3.1-405b-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-405b-turbo"),
-"Llama-3.1-405B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"),
-"Llama-3.2-90B(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo"),
-"Llama-3.1-70b-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-70b-turbo"),
-"Llama-3.1-8b-turbo(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "llama-3.1-8b-turbo"),
-"LlamaGuard-2-8b(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "LlamaGuard-2-8b"),
-"Llama-Guard-7b(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Llama-Guard-7b"),
-"Meta-Llama-Guard-3-8B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Meta-Llama-Guard-3-8B"),
-"Mixtral-8x7B-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-v0.1"),
-"Mixtral-8x7B-Instruct-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x7B-Instruct-v0.1"),
-"Mixtral-8x22B-Instruct-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mixtral-8x22B-Instruct-v0.1"),
-"Mistral-7B-Instruct-v0.1(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.1"),
-"Mistral-7B-Instruct-v0.2(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.2"),
-"Mistral-7B-Instruct-v0.3(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Mistral-7B-Instruct-v0.3"),
-"Qwen1.5-72B-Chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-72B-Chat"),
-"Qwen1.5-110B-Chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen1.5-110B-Chat"),
-"Qwen2-72B-Instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Qwen2-72B-Instruct"),
-"Gemma-2b-it(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2b-it"),
-"Dbrx-instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "dbrx-instruct"),
-"Deepseek-coder-33b-instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-coder-33b-instruct"),
-"Deepseek-llm-67b-chat(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "deepseek-llm-67b-chat"),
-"Nous-Hermes-2-Mixtral-8x7B-DPO(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Mixtral-8x7B-DPO"),
-"Nous-Hermes-2-Yi-34B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "Nous-Hermes-2-Yi-34B"),
-"WizardLM-2-8x22B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "WizardLM-2-8x22B"),
-"CodeLlama-7b-Python(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-7b-Python"),
-"Snowflake-arctic-instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "snowflake-arctic-instruct"),
-"Solar-10.7B-Instruct-v1.0(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "SOLAR-10.7B-Instruct-v1.0"),
-"Stripedhyena-nous-7B(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "StripedHyena-Nous-7B"),
-"CodeLlama-13b-Instruct(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "CodeLlama-13b-Instruct"),
-"Mythomax-L2-13b(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "MythoMax-L2-13b"),
-"Gemma-2-9b-it(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-9b-it"),
-"Gemma-2-27b-it(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemma-2-27b-it"),
-"Gemini-1.5-flash(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-flash"),
-"Gemini-1.5-pro(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "gemini-1.5-pro"),
-"Gemini-1.5-pro(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "gemini-1.5-pro"),
-"Gemini-1-5-flash(Amigo)": lambda user_input: communicate_with_Amigo(user_input, "gemini-1-5-flash"),
-"Sparkdesk(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "sparkdesk"),
-"Cosmosrp(DiscordRocks)": lambda user_input: communicate_with_DiscordRocks(user_input, "cosmosrp"),
-"Reflection-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "mattshumer/Reflection-Llama-3.1-70B"),
+"Phind_Web": communicate_with_Phind,
+"Felo_Web": communicate_with_Felo,
+"TurboSeek_Web":communicate_with_TurboSeek,
+"Marcus_Web":communicate_with_Marcus,
+"Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),
 "Llama 3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
-"Llama-3.1-70B (DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct"),
-"Llama-3.1-70B-Instruct-Turbo(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"),
-"Llama-3.1-Nemotron-70B-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "nvidia/Llama-3.1-Nemotron-70B-Instruct"),
-"Llama-3.2-90B-Vision-Instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Llama-3.2-90B-Vision-Instruct"),
 "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
-"Meta-Llama-3.1-405B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input, "meta-llama/Meta-Llama-3.1-405B-Instruct"),
-"Mixtral-8x7b(DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input,"mixtral-8x7b"),
-"Mixtral-8x22B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x22B-Instruct-v0.1"),
-"WizardLM-2-8x22B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/WizardLM-2-8x22B"),
-"Mixtral-8x7B(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"mistralai/Mixtral-8x7B-Instruct-v0.1"),
-"Dolphin-2.6-mixtral-8x7b(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.6-mixtral-8x7b"),
-"Dolphin-2.9.1-llama-3-70b(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"cognitivecomputations/dolphin-2.9.1-llama-3-70b"),
-"L3-70B-Euryale-v2.1(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"Sao10K/L3-70B-Euryale-v2.1"),
-"Phi-3-medium-4k-instruct(DeepInfra)": lambda user_input: communicate_with_DeepInfra(user_input,"microsoft/Phi-3-medium-4k-instruct"),
 "MiniCPM-Llama3-V-2_5(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
 "Llava-1.5-7b-hf(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
-"Emi_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "emi"),
-"Stablediffusion-1.5_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-1.5"),
-"Stablediffusion-2.1_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "stablediffusion-2.1"),
-"Sdxl-lora_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "sdxl-lora"),
-"Dalle_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dalle"),
-"Dalle2_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dalle2"),
-"Dalle-mini_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dalle-mini"),
-"DreamshaperXL10_alpha2_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dreamshaperXL10_alpha2.safetensors [c8afe2ef]"),
-"DynavisionXL_0411_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "dynavisionXL_0411.safetensors [c39cc051]"),
-"JuggernautXL_v45_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "juggernautXL_v45.safetensors [e75f5471]"),
-"RealismEngineSDXL_v10_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "realismEngineSDXL_v10.safetensors [af771c3f]"),
-"Sd_xl_base_1.0_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0.safetensors [be9edd61]"),
-"AnimagineXLV3_v30_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "animagineXLV3_v30.safetensors [75f2f05b]"),
-"Sd_xl_base_1.0_inpainting_0.1_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "sd_xl_base_1.0_inpainting_0.1.safetensors [5679a81a]"),
-"TurbovisionXL_v431_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "turbovisionXL_v431.safetensors [78890989]"),
-"Devlishphotorealism_sdxl15_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "devlishphotorealism_sdxl15.safetensors [77cba69f]"),
-"RealvisxlV40_img(NexraImager)":lambda user_input: communicate_with_NexraImager(user_input, "realvisxlV40.safetensors [f7fdcb51]"),
-"BlackboxAIImager_img":lambda user_input: communicate_with_BlackboxAIImager(user_input),
-"Prodia_img":lambda user_input: gen_img(user_input, "prodia"),
-"Pollinations_img":lambda user_input: gen_img(user_input, "pollinations")
+"Artbit_img":lambda user_input:communicate_with_ArtBit(user_input)
 }
 
 talk_please = {
@@ -546,6 +411,14 @@ micro_error_message={
     "en":"Microphone is not available!"
 }
 
+API_message={
+    "ru":"API Mode включен, скоро откроется ссылка в браузере",
+    "en":"API Mode enabled, a link will open soon in the browser"
+}
+
+def get_API_message(isTranslate):
+    return API_message["ru" if not isTranslate else "en"]
+
 def get_micro_error_message(isTranslate):
     return micro_error_message["ru" if not isTranslate else "en"]
 
@@ -602,69 +475,39 @@ def communicate_with_VLM(user_input, model):
 
 def gen_img(user_input, model):
     try:
-        resp = Client.create_generation(model, user_input)
+        # Формируем URL для запроса
+        url = f"https://image.pollinations.ai/prompt/{user_input}?model={model}"
+        resp = requests.get(url)
 
-        img_folder = 'img'
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-        now = datetime.now()
-        image_path = os.path.join(img_folder, f'{user_input}_{now.strftime('%d.%m.%Y_%H.%M.%S')}.png')
-        with Image.open(BytesIO(resp)) as img:
-            img.save(image_path)
+        if resp.ok:
+            if not os.path.exists(img_folder):
+                os.makedirs(img_folder)
 
-        return f"{get_save_img_messages(app.isTranslate)}{image_path}"
+            now = datetime.now()
+            saved_images = []  # Список для хранения путей сохраненных изображений
 
-    except Exception as e:
-       return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_BlackboxAIImager(user_input):
-    try:
-        bot = BlackboxAIImager()
-        resp = bot.generate(user_input, 1)
-        img_folder = 'img'
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-        now = datetime.now()
-        image_path = os.path.join(img_folder, f'{user_input}_{now.strftime('%d.%m.%Y_%H.%M.%S')}.png')
-        # Объединяем список байтов в один объект байтов
-        combined_bytes = b''.join(resp)
-
-        with Image.open(BytesIO(combined_bytes)) as img:
-            img.save(image_path)
-
-        return f"{get_save_img_messages(app.isTranslate)}{image_path}"
-
-    except Exception as e:
-       return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
-def communicate_with_NexraImager(user_input, model):
-    try:
-        ai = NexraImager()
-        ai.model = model
-        resp = ai.generate(user_input, model)
-
-        # Проверяем, что resp - это список изображений
-        if isinstance(resp, list) and len(resp) > 0:
-            num_images = len(resp)  # Количество изображений
-        else:
-            raise ValueError(get_error_gen_img_messages(app.isTranslate))
-
-        img_folder = 'img'
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-
-        now = datetime.now()
-        saved_images = []  # Список для хранения путей сохраненных изображений
-
-        for i, image_data in enumerate(resp):
-            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}_{i + 1}.png')
-            with Image.open(BytesIO(image_data)) as img:
-                img.save(image_path)
+            # Сохраняем изображение
+            image_path = os.path.join(img_folder, f'{user_input}_{now.strftime("%d.%m.%Y_%H.%M.%S")}.png')
+            with open(image_path, 'wb') as img_file:
+                img_file.write(resp.content)  # Сохраняем содержимое ответа как изображение
                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
 
-        return f"{get_save_img_messages(app.isTranslate)}{', '.join(saved_images)}"
+            return f"{get_save_img_messages(app.isTranslate)}{', '.join(saved_images)}"
+        else:
+            return f"{get_error_gen_img_messages(app.isTranslate)}: {resp.status_code}"
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+def communicate_with_ArtBit(user_input):
+    try:
+        provider = ArtbitImager(logging=False)
+        images = provider.generate(user_input)
+        if not os.path.exists(img_folder):
+            os.makedirs(img_folder)
+        provider.save(images, dir='img')
+        return "Ok. Check img folder"
+    except Exception as e:
+        return f"{get_error_gen_img_messages(app.isTranslate)}: {str(e)}"
 
 class ChatApp(ctk.CTk):
     def __init__(self):
@@ -676,6 +519,7 @@ class ChatApp(ctk.CTk):
             self.tesseract_cmd = resource_path('tesseract.exe')
             pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
+            self.is_read = None
             self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
             self.server_process = None
@@ -696,9 +540,6 @@ class ChatApp(ctk.CTk):
             # Устанавливаем окно в полноэкранный режим
             # self.attributes("-fullscreen", True)
 
-            # Привязываем событие изменения размера окна
-            self.bind("<Configure>", self.on_resize)
-
             # Загрузка иконки через resource_path
             icon_path = resource_path("icon.ico")
             self.image = Image.open(icon_path)
@@ -706,6 +547,11 @@ class ChatApp(ctk.CTk):
 
             # Привязываем событие закрытия окна
             self.protocol("WM_DELETE_WINDOW", self.hide_window)
+
+            # Инициализация TTS движка
+            self.engine = None
+            self.engine = pyttsx3.init()
+            self.engine.setProperty('rate', 170)  # Скорость речи
 
             # Создание виджета chat_history с прокруткой
             self.chat_history_frame = ctk.CTkFrame(self)
@@ -740,6 +586,10 @@ class ChatApp(ctk.CTk):
             self.category_frame = ctk.CTkFrame(self.input_frame)
             self.category_frame.pack(side="top", padx=6)  # Устанавливаем фрейм ниже
 
+            self.read_var = tk.BooleanVar()
+            self.read_var = ctk.CTkCheckBox(self.category_frame, text="Прочитать текст", variable=self.is_read)
+            self.read_var.pack(side="right", padx=4, pady=4)
+
             # Метка для категории
             self.category_label = ctk.CTkLabel(self.category_frame, text="Выберите категорию:", font=("Consolas", 18))
             self.category_label.pack(side="left", padx=6)
@@ -762,13 +612,15 @@ class ChatApp(ctk.CTk):
             self.search_entry = ctk.CTkEntry(self.category_frame, textvariable=self.search_var, font=("Consolas", 18))
             self.search_entry.pack(side="left", padx=6)
 
+            self.search_entry.bind("<FocusIn>", self.set_active_widget)
+
             # Чекбокс "Вести историю"
             self.history_var = tk.BooleanVar()
             self.history_checkbox = ctk.CTkCheckBox(self.category_frame, text="Вести историю", variable=self.history_var)
             self.history_checkbox.pack(side="top", padx=4, pady=4)
 
             # Установка trace для отслеживания изменений в строке поиска
-            self.search_var.trace("w", self.filter_models)
+            self.search_var.trace("w", lambda *args: self.after(300, self.filter_models))
 
             # Обновление списка моделей при инициализации
             self.update_model_list("All")
@@ -792,6 +644,8 @@ class ChatApp(ctk.CTk):
             self.input_entry.bind("<Shift-Return>", self.insert_newline)
             self.input_entry.bind("<Return>", self.send_message)
             self.input_entry.bind("<KeyPress>", self.on_key_press)
+
+            self.search_entry.bind("<KeyPress>", self.on_key_press)
 
             # Создаем фрейм для кнопок
             self.button_frame = ctk.CTkFrame(self.input_frame)
@@ -856,12 +710,18 @@ class ChatApp(ctk.CTk):
             self.input_entry.bind("<FocusIn>", self.set_active_widget)
 
         except Exception as e:
-            messagebox.showerror("Возникла ошибка", e)
+            messagebox.showerror("Error", str(e))
 
-    def on_resize(self, event):
-        # Устанавливаем окно всегда на переднем плане
-        self.attributes("-topmost", True)
-        self.after(100, self.focus_force)  # Устанавливаем фокус через 100 мс
+    def speak(self, text):
+        if self.engine and self.read_var.get():  # Проверяем состояние чекбокса
+            def run_tts():
+                try:
+                    self.engine.say(text)
+                    self.engine.runAndWait()
+                except Exception as e:
+                   messagebox.showerror(f"Reproduction Error: {str(e)}")
+
+            threading.Thread(target=run_tts, daemon=True).start()
 
     def get_local_ip(self):
         try:
@@ -936,6 +796,7 @@ class ChatApp(ctk.CTk):
         self.server_process = threading.Thread(target=run_fastapi_app, daemon=True)
         self.server_process.start()
         server_url = f"http://{self.local_ip}:8000/chat"
+        messagebox.showwarning("Server started", get_API_message(self.isTranslate))
         webbrowser.open(server_url)
         self.api_running = True
         self.api_mode_button.configure(text="Stop API Mode")
@@ -1064,9 +925,21 @@ class ChatApp(ctk.CTk):
             elif category == "Web" and "_Web" in model:
                 filtered_models.append(model)
 
+        # Сохраняем текущее значение комбобокса
+        current_selection = self.model_combobox.get()
+
         # Обновление комбобокса с моделями
         self.model_combobox.configure(values=filtered_models)
-        self.model_combobox.set(filtered_models[0] if filtered_models else "")
+
+        # Восстанавливаем предыдущий выбор, если он есть в новом списке
+        if current_selection in filtered_models:
+            self.model_combobox.set(current_selection)
+        else:
+            # Устанавливаем первую модель из нового списка, если текущая не найдена
+            self.model_combobox.set(filtered_models[0] if filtered_models else "")
+
+        # Добавляем небольшую задержку для плавного обновления
+        self.update_idletasks()  # Обновляем интерфейс
 
     def set_active_widget(self, event):
         # Устанавливаем активный виджет
@@ -1100,6 +973,7 @@ class ChatApp(ctk.CTk):
                 target=self.tray_icon.run,
                 daemon=True)
             self.tray_icon_thread.start()
+
     def show_window(self):
         """Восстановление окна из трея"""
         if self.tray_icon:
@@ -1123,6 +997,8 @@ class ChatApp(ctk.CTk):
                 if model in model_functions:
                     self.chat_history.configure(state="normal")  # Включаем редактирование
                     response = model_functions[model](user_input)
+                    if self.read_var.get():
+                        self.speak(response)
                     if not self.isTranslate:
                         self.chat_history.insert(tk.END, f"Вы: {user_input}\n", "user_input")
                         self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n", "response")
@@ -1177,7 +1053,7 @@ class ChatApp(ctk.CTk):
     def on_key_press(self, event):
         # Вывод отладочной информации
         # print(f"Нажата клавиша: {event.keysym}, состояние: {event.state}, символ: {event.char}, код клавиши: {event.keycode}")
-
+        # print(f"Текущий виджет: {self.active_widget}")
         self.record_history(event) # История ввода
 
         # Проверка нажатия Ctrl
@@ -1220,6 +1096,10 @@ class ChatApp(ctk.CTk):
                 if self.input_entry.get("1.0", "end-1c").strip():  # Убираем пробелы
                     self.input_entry.tag_add("sel", "1.0", "end-1c")  # Выделяем весь текст
                     self.input_entry.mark_set("insert", "1.0")  # Устанавливаем курсор в начало
+            elif str(current_widget) == '.!ctkframe2.!ctkframe.!ctkentry.!entry':
+                # Для CTkEntry используем стандартные методы выделения текста
+                self.search_entry.select_range(0, "end")
+                self.search_entry.icursor("end")  # Устанавливаем курсор в конец
             self.chat_history.configure(state="disable")  # Включаем редактирование
             return "break"
         except Exception as e:
@@ -1265,9 +1145,12 @@ class ChatApp(ctk.CTk):
         try:
             # Получаем текст из буфера обмена
             clipboard_text = self.clipboard_get()
-
-            # Вставляем текст в поле ввода
-            self.input_entry.insert("insert", clipboard_text)
+            if str(self.active_widget) == '.!ctkframe2.!ctkframe.!ctkentry.!entry':
+                # Вставляем текст в поле поиска
+                self.search_entry.insert("insert", clipboard_text)
+            else:
+                # Вставляем текст в поле ввода
+                self.input_entry.insert("insert", clipboard_text)
 
             # Возвращаем "break", чтобы предотвратить дальнейшее распространение события
             return "break"
@@ -1290,6 +1173,14 @@ class ChatApp(ctk.CTk):
                 selected_text = self.input_entry.get("sel.first", "sel.last")
                 self.clipboard_clear()
                 self.clipboard_append(selected_text)
+            elif str(self.active_widget) == '.!ctkframe2.!ctkframe.!ctkentry.!entry':
+                try:
+                    selected_text = self.search_entry.selection_get()
+                    self.clipboard_clear()
+                    self.clipboard_append(selected_text)
+                except Exception:
+                    # Если текст не выделен, ничего не делаем
+                    pass
             self.chat_history.configure(state="disabled")  # Возвращаем в состояние "disabled"
             return "break"
         except Exception as e:
@@ -1330,6 +1221,7 @@ class ChatApp(ctk.CTk):
             self.img_reco_button.configure(text="Распознать текст")
             self.search_label.configure(text="Поиск модели:")
             self.speech_reco_button.configure(text="Голосовой ввод")
+            self.read_var.configure(text="Прочитать текст")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -1349,11 +1241,19 @@ class ChatApp(ctk.CTk):
             self.img_reco_button.configure(text="Recognize text")
             self.search_label.configure(text="Model Search:")
             self.speech_reco_button.configure(text="Voice input")
+            self.read_var.configure(text="Read text")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
 
 
 if __name__ == "__main__":
     check_for_updates()
+    # Получаем текстовые модели
+    chat_model_functions = get_Polinations_chat_models()
+    # Получаем модели изображений
+    img_model_functions = get_Polinations_img_models()
+    # Объединяем словари
+    model_functions.update(chat_model_functions)
+    model_functions.update(img_model_functions)
     app = ChatApp()
     app.mainloop()
