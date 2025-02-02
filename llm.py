@@ -16,11 +16,12 @@ import threading
 import uvicorn
 import socket
 import pyttsx3
+import platform
 
 from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, Qwenlm, Marcus, WEBS as w
 from webscout import ArtbitImager
 from datetime import datetime
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, PhotoImage
 from PIL import Image
 from packaging import version
 from fastapi import FastAPI, HTTPException
@@ -541,9 +542,14 @@ class ChatApp(ctk.CTk):
             # self.attributes("-fullscreen", True)
 
             # Загрузка иконки через resource_path
-            icon_path = resource_path("icon.ico")
-            self.image = Image.open(icon_path)
-            self.iconbitmap(icon_path)
+            if platform.system() == "Windows":
+                icon_path = resource_path("icon.ico")
+                self.iconbitmap(icon_path)
+            else:
+                icon_path = resource_path("icon.png")
+                # Для Linux и macOS используем PhotoImage
+                icon = PhotoImage(file=icon_path)
+                self.iconphoto(True, icon)
 
             # Привязываем событие закрытия окна
             self.protocol("WM_DELETE_WINDOW", self.hide_window)
@@ -975,10 +981,26 @@ class ChatApp(ctk.CTk):
             self.tray_icon_thread.start()
 
     def show_window(self):
-        """Восстановление окна из трея"""
+        """
+        Восстановление окна из трея.
+        Адаптировано для работы на Windows и Linux.
+        """
         if self.tray_icon:
-            self.tray_icon.stop()  # Останавливаем текущую иконку
+            # Останавливаем текущую иконку трея (если это необходимо)
+            self.tray_icon.stop()
+
+        # Дополнительные действия для Linux
+        if platform.system() == "Linux":
+            # На некоторых Linux-системах может потребоваться принудительное обновление состояния окна
+            self.deiconify()
+            self.update_idletasks()
+            self.lift()
+            self.attributes('-type', 'normal')
+
+        # Восстанавливаем окно
         self.deiconify()
+
+        # Устанавливаем окно поверх других окон
         self.attributes('-topmost', 1)
         self.attributes('-topmost', 0)
 

@@ -18,14 +18,17 @@
 2. Перейти в папку (на Windows):  
 ```cd /d llm```  
 Unix:  
-```cd llm```
+```cd llm```  
 3. Создать виртуальное окружение:  
-```python -m venv venv```
+```python -m venv venv```  
 4. Активировать виртуальное окружение:  
-```venv\Scripts\activate```
-5. Установить зависимости:  
+. На Windows:  
+```venv\Scripts\activate```  
+. Unix:  
+```source venv/bin/activate```
+5. Установить зависимости:
 ```pip install -r requirements.txt```
-6. Запустить файл:  
+6. Запустить файл:
 ```python llm.py```  
 
 # Description
@@ -47,12 +50,83 @@ This is an application that allows you to use free services from the Webscout pa
 2. Navigate to the folder (on Windows):  
 ```cd /d llm```  
 Unix:  
-```cd llm```
+```cd llm```  
 3. Create a virtual environment:  
 ```python -m venv venv```
 4. Activate the virtual environment:  
-`venv\Scripts\activate`
-5. Install dependencies:  
-`pip install -r requirements.txt `
-6. Run the file:  
-```python llm.py```
+. On Windows:  
+```venv\Scripts\activate```  
+. Unix:  
+```source venv/bin/activate```  
+5. Install dependencies:
+```pip install -r requirements.txt ```
+6. Run the file:
+```python llm.py```  
+
+## Известные проблемы при установке на Unix:  
+1. Не устанавливается модуль playsound.  
+   Решение:  
+```pip install playsound==1.2.2```  
+И заново выполнить:  
+```pip install -r requirements.txt```  
+2. Не удаётся установить PyAudio.  
+   Решение:  
+```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
+    ```sudo apt-get install ffmpeg libav-tools```  
+    ```pip install PyAudio```
+И заново выполнить:  
+```pip install -r requirements.txt```  
+   И заново выполнить:  
+```pip install -r requirements.txt```  
+3. Модуль Tkinter не найден.  
+Решение:  
+```sudo apt-get install python3-tk```  
+4. Модуль aiohttp не найден.  
+   Решение:  
+   ```sudo apt install python3-aiohttp```
+5. Установить дополнительные модули:
+```pip install colorama python-xlib aiohttp```
+6. Ошибка при запуске:  
+"PyGetWindow currently does not support this platform."
+"If you have knowledge of the platform's windowing system, please contribute! "
+"https://github.com/asweigart/pygetwindow"
+   Решение:
+Пока PyGetWindow официально не поддерживает Linux, но можно попробовать исправить эту проблему. Выполните эти действия:  
+Скачайте файлы отсюда: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow  
+В вашем виртуальном окружении найдите папку PyGetWindow и копируйте новые файлы туда с заменой.  
+После этого заново попробуйте запустить Ваше приложение.  
+Код тестировался на последней версии Lubuntu с последними версиями пакетов Tkinter и CustomTkinter, в теории код может быть запущен и на других OC с поддержкой X-lib.  
+
+## Known problems when installing on Unix:  
+1. The playsound module is not installed or another error.  
+   Decision:  
+```pip install playsound==1.2.2```  
+And re-execute:  
+```pip install -r requirements.txt```  
+2. PyAudio cannot be installed.  
+   Decision:  
+```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
+    ```sudo apt-get install ffmpeg libav-tools```  
+    ```pip install PyAudio```
+And re-execute:  
+```pip install -r requirements.txt```  
+   And re-execute:  
+```pip install -r requirements.txt```  
+3. The Tkinter module was not found.  
+Decision:  
+```sudo apt-get install python3-tk```  
+4. The aiohttp module was not found.  
+   Solution:
+``sudo apt install python3-aiohttp``
+5. Install additional modules:
+``pip install colorama python-xlib aiohttp``
+6. Startup error:
+"PyGetWindow currently does not support this platform."
+"If you have knowledge of the platform's windowing system, please contribute! "
+"https://github.com/asweigart/pygetwindow"
+   Decision:
+PyGetWindow does not officially support Linux yet, but you can try to fix this problem. Follow these steps:  
+Download the files from here: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow  
+In your virtual environment, find the PyGetWindow folder and copy the new files there with the replacement.  
+After that, try launching your application again.  
+The code was tested on the latest version of Lubuntu with the latest versions of the Tkinter and CustomTkinter packages. In theory, the code can be run on other OCS with X-lib support.
