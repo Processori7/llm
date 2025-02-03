@@ -1,3 +1,4 @@
+playsound==1.2.2
 webscout
 pillow
 ollama
@@ -27,3 +28,5 @@ uvicorn
 asyncio
 fastapi
 pyttsx3
+aiohttp
+fake_useragent

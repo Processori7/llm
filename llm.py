@@ -517,10 +517,14 @@ class ChatApp(ctk.CTk):
             ctk.set_appearance_mode("dark")
             ctk.set_default_color_theme("green")
 
-            self.tesseract_cmd = resource_path('tesseract.exe')
+            # Определение пути к Tesseract в зависимости от платформы
+            if platform.system() == "Windows":
+                self.tesseract_cmd = resource_path('tesseract.exe')
+            else:
+                self.tesseract_cmd = "/usr/bin/tesseract"
+
             pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
-            self.is_read = None
             self.stop_listening = None  # Объект для остановки прослушивания
             self.isTranslate = False
             self.server_process = None
@@ -532,7 +536,7 @@ class ChatApp(ctk.CTk):
 
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
-
+            
             # Поднимаем окно на передний план
             self.lift()
             self.focus_force()  # Устанавливаем фокус на окно
@@ -552,7 +556,8 @@ class ChatApp(ctk.CTk):
                 self.iconphoto(True, icon)
 
             # Привязываем событие закрытия окна
-            self.protocol("WM_DELETE_WINDOW", self.hide_window)
+            if platform.system() == "Windows":
+                self.protocol("WM_DELETE_WINDOW", self.hide_window)
 
             # Инициализация TTS движка
             self.engine = None
@@ -563,9 +568,13 @@ class ChatApp(ctk.CTk):
             self.chat_history_frame = ctk.CTkFrame(self)
             self.chat_history_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-            self.chat_history = ctk.CTkTextbox(self.chat_history_frame, font=("Consolas", 18))
+            font_size = int(min(self.winfo_screenwidth(), self.winfo_screenheight()) / 100) + 8
+            button_height = 30 if self.winfo_screenheight() >= 900 else 20
+
+            self.chat_history = ctk.CTkTextbox(self.chat_history_frame, font=("Consolas", font_size))
             self.chat_history.pack(fill="both", expand=True)
             self.chat_history.configure(state="disabled")
+            self.chat_history.configure(wrap="word")
 
             # Добавление контекстного меню для chat_history
             self.chat_history.bind("<Button-3>", self.show_context_menu)
@@ -577,33 +586,28 @@ class ChatApp(ctk.CTk):
             self.input_frame.pack(fill="x", padx=10, pady=10)
 
             # Метка для выбора модели
-            self.model_label = ctk.CTkLabel(self.input_frame, text="Выберите модель:", font=("Consolas", 18))
+            self.model_label = ctk.CTkLabel(self.input_frame, text="Выберите модель:", font=("Consolas", font_size))
             self.model_label.pack(side="left", padx=5)
 
             # Комбобокс для выбора модели
             self.model_var = tk.StringVar()
-            self.model_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.model_var, font=("Consolas", 16),
+            self.model_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.model_var, font=("Consolas", font_size),
                                                     values=list(model_functions.keys()))
             self.model_combobox.pack(side="left", padx=5)
             self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
-
 
             # Создаем новый фрейм для выбора категории
             self.category_frame = ctk.CTkFrame(self.input_frame)
             self.category_frame.pack(side="top", padx=6)  # Устанавливаем фрейм ниже
 
-            self.read_var = tk.BooleanVar()
-            self.read_var = ctk.CTkCheckBox(self.category_frame, text="Прочитать текст", variable=self.is_read)
-            self.read_var.pack(side="right", padx=4, pady=4)
-
             # Метка для категории
-            self.category_label = ctk.CTkLabel(self.category_frame, text="Выберите категорию:", font=("Consolas", 18))
+            self.category_label = ctk.CTkLabel(self.category_frame, text="Выберите категорию:", font=("Consolas", font_size))
             self.category_label.pack(side="left", padx=6)
 
             # Комбобокс для выбора категории моделей
             self.category_var = tk.StringVar()
             self.category_combobox = ctk.CTkOptionMenu(self.category_frame, variable=self.category_var,
-                                                       font=("Consolas", 16),
+                                                       font=("Consolas", font_size),
                                                        values=["All", "Text", "Img", "Photo Analyze", "Web"],
                                                        command=self.update_model_list)
             self.category_combobox.pack(side="left", padx=6)
@@ -611,19 +615,32 @@ class ChatApp(ctk.CTk):
             # Установка "All" как модели по умолчанию
             self.category_combobox.set("All")
 
-            self.search_label = ctk.CTkLabel(self.category_frame, text="Поиск модели:", font=("Consolas", 18))
+            self.search_label = ctk.CTkLabel(self.category_frame, text="Поиск модели:", font=("Consolas", font_size))
             self.search_label.pack(side="left", padx=6)
 
             self.search_var = tk.StringVar()
-            self.search_entry = ctk.CTkEntry(self.category_frame, textvariable=self.search_var, font=("Consolas", 18))
+            self.search_entry = ctk.CTkEntry(self.category_frame, textvariable=self.search_var, font=("Consolas", font_size))
             self.search_entry.pack(side="left", padx=6)
 
             self.search_entry.bind("<FocusIn>", self.set_active_widget)
 
-            # Чекбокс "Вести историю"
+            self.read_var = tk.BooleanVar()
+            self.read_checkbox = ctk.CTkCheckBox(self.category_frame, text="Прочитать текст",
+                                            font=("Consolas", font_size),
+                                            variable=self.read_var)
             self.history_var = tk.BooleanVar()
-            self.history_checkbox = ctk.CTkCheckBox(self.category_frame, text="Вести историю", variable=self.history_var)
-            self.history_checkbox.pack(side="top", padx=4, pady=4)
+            self.history_checkbox = ctk.CTkCheckBox(self.category_frame, text="Вести историю",
+                                                    font=("Consolas", font_size), variable=self.history_var)
+
+            if self.winfo_screenheight() < 900:
+                self.read_checkbox.pack_forget()  # Скрывает чекбокс "Прочитать текст"
+                self.history_checkbox.pack_forget()  # Скрывает чекбокс "Вести историю"
+            else:
+                # Дополнительные кнопки для больших экранов
+                self.read_checkbox.pack(side="right", padx=4, pady=4)
+
+                # Чекбокс "Вести историю"
+                self.history_checkbox.pack(side="top", padx=4, pady=4)
 
             # Установка trace для отслеживания изменений в строке поиска
             self.search_var.trace("w", lambda *args: self.after(300, self.filter_models))
@@ -631,7 +648,7 @@ class ChatApp(ctk.CTk):
             # Обновление списка моделей при инициализации
             self.update_model_list("All")
 
-            self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", 16), height=200, width=180, wrap="word", text_color="orange")
+            self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", font_size), height=200, width=180, wrap="word", text_color="orange")
             self.input_entry.edit_undo()
             self.input_entry.pack(side="left", fill="x", expand=True, padx=5)
 
@@ -653,49 +670,57 @@ class ChatApp(ctk.CTk):
 
             self.search_entry.bind("<KeyPress>", self.on_key_press)
 
+            if self.winfo_screenheight() < 900:
+                # Создание верхнего меню
+                self.create_menu()
             # Создаем фрейм для кнопок
             self.button_frame = ctk.CTkFrame(self.input_frame)
             self.button_frame.pack(side="top", fill="x")  # Упаковываем фрейм сверху и растягиваем по ширине
 
-            # Кнопки
+            # Кнопки, которые остаются всегда видимыми
             self.send_button = ctk.CTkButton(self.button_frame, text="Отправить", command=self.send_message,
-                                             font=("Consolas", 14), text_color="white")
+                                             font=("Consolas", font_size), text_color="white", height=button_height)
             self.send_button.pack(side="top", padx=5, pady=10)
 
             self.clear_button = ctk.CTkButton(self.button_frame, text="Очистить чат", command=self.clear_chat,
-                                              font=("Consolas", 14), text_color="white")
+                                              font=("Consolas", font_size), text_color="white", height=button_height)
             self.clear_button.pack(side="top", padx=5, pady=10)
 
-            # Кнопка голосового ввода
             self.speech_reco_button = ctk.CTkButton(self.button_frame, text="Голосовой ввод",
                                                     command=self.toggle_recognition,
-                                                    font=("Consolas", 14), text_color="white")
+                                                    font=("Consolas", font_size), text_color="white", height=button_height)
             self.speech_reco_button.pack(side="top", padx=5, pady=10)
 
-            # Кнопка распознавания текста с картинки
-            self.img_reco_button = ctk.CTkButton(self.button_frame, text="Распознать текст", command=self.recognize_text,
-                                                 font=("Consolas", 14), text_color="white")
-            self.img_reco_button.pack(side="top", padx=5, pady=10)
-
-            # Кнопка переключения темы
             self.theme_button = ctk.CTkButton(self.button_frame, text="Светлая тема", command=self.toggle_theme,
-                                              font=("Consolas", 14), text_color="white")
-            self.theme_button.pack(side="top", padx=5, pady=10)
+                                              font=("Consolas", font_size), text_color="white",
+                                              height=button_height)
 
-            # Кнопка переключения языка
             self.lang_button = ctk.CTkButton(self.button_frame, text="English", command=self.toggle_lang,
-                                             font=("Consolas", 14), text_color="white")
-            self.lang_button.pack(side="top", padx=5, pady=10)
+                                             font=("Consolas", font_size), text_color="white", height=button_height)
 
-            # Кнопка API Mode
             self.api_mode_button = ctk.CTkButton(self.button_frame, text="API Mode", command=self.toggle_api_mode,
-                                                 font=("Consolas", 14), text_color="white")
+                                                 font=("Consolas", font_size), text_color="white",
+                                                 height=button_height)
 
-            self.api_mode_button.pack(side="top", padx=5, pady=10)
+            self.img_reco_button = ctk.CTkButton(self.button_frame, text="Распознать текст",
+                                                 command=self.recognize_text,
+                                                 font=("Consolas", font_size), text_color="white",
+                                                 height=button_height)
+            # Проверка высоты экрана
+            if self.winfo_screenheight() >= 900:
+                # Дополнительные кнопки для больших экранов
 
-            # Кнопка закрытия программы
+                self.img_reco_button.pack(side="top", padx=5, pady=10)
+
+
+                self.theme_button.pack(side="top", padx=5, pady=10)
+
+                self.lang_button.pack(side="top", padx=5, pady=10)
+
+                self.api_mode_button.pack(side="top", padx=5, pady=10)
+
             self.exit_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
-                                             font=("Consolas", 14), text_color="white")
+                                             font=("Consolas", font_size), text_color="white", height=button_height)
             self.exit_button.pack(side="top", padx=5, pady=10)
 
             # Определение тегов для цветного текста
@@ -728,6 +753,51 @@ class ChatApp(ctk.CTk):
                    messagebox.showerror(f"Reproduction Error: {str(e)}")
 
             threading.Thread(target=run_tts, daemon=True).start()
+
+    def create_menu(self):
+        """Создает верхнее меню с поддержкой перевода."""
+        menubar = tk.Menu(self)
+
+        # Меню "Файл"
+        file_menu = tk.Menu(menubar, tearoff=0)
+        if not self.isTranslate:
+            file_menu.add_command(label="Выход", command=self.on_exit)
+        else:
+            file_menu.add_command(label="Exit", command=self.on_exit)
+        menubar.add_cascade(label="Файл" if not self.isTranslate else "File", menu=file_menu)
+
+        # Меню "Настройки"
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        if not self.isTranslate:
+            settings_menu.add_command(label="Переключить тему", command=self.toggle_theme)
+            settings_menu.add_command(label="English", command=self.toggle_lang)
+            settings_menu.add_command(label="Вести историю", command=self.toggle_history)
+            settings_menu.add_command(label="Прочитать текст", command=self.toggle_read_text)
+            settings_menu.add_command(label="API Mode", command=self.toggle_api_mode)
+        else:
+            settings_menu.add_command(label="Toggle Theme", command=self.toggle_theme)
+            settings_menu.add_command(label="Russian", command=self.toggle_lang)
+            settings_menu.add_command(label="Keep History", command=self.toggle_history)
+            settings_menu.add_command(label="Read Text", command=self.toggle_read_text)
+            settings_menu.add_command(label="API Mode", command=self.toggle_api_mode)
+        menubar.add_cascade(label="Настройки" if not self.isTranslate else "Settings", menu=settings_menu)
+
+        # Меню "Инструменты"
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        if not self.isTranslate:
+            tools_menu.add_command(label="Распознать текст", command=self.recognize_text)
+        else:
+            tools_menu.add_command(label="Recognize Text", command=self.recognize_text)
+        menubar.add_cascade(label="Инструменты" if not self.isTranslate else "Tools", menu=tools_menu)
+
+        self.config(menu=menubar)
+
+    def toggle_read_text(self):
+        self.read_var.set(not self.read_var.get())
+
+    def toggle_history(self):
+        """Переключает режим ведения истории."""
+        self.history_var.set(not self.history_var.get())
 
     def get_local_ip(self):
         try:
@@ -878,42 +948,58 @@ class ChatApp(ctk.CTk):
 
     def recognize_text(self):
         try:
-            # Проверяем наличие tesseract через resource_path
-            if os.path.exists(self.tesseract_cmd):
+            # Проверяем наличие Tesseract в зависимости от платформы
+            if platform.system() == "Windows":
+                tesseract_path = self.tesseract_cmd  # Используем путь из resource_path
+            else:
+                tesseract_path = "/usr/bin/tesseract"  # Стандартный путь на Linux
 
-                image_path = filedialog.askopenfilename(title="Выберите изображение",
-                                                        filetypes=(("Изображения", "*.jpg;*.png;*.gif"),
-                                                                   ("Все файлы", "*.*")))
-                if image_path:
-                    # Загрузка изображения
-                    image = cv2.imread(image_path)
+            if not os.path.exists(tesseract_path):
+                messagebox.showerror("Error", "Tesseract не найден. Убедитесь, что он установлен.")
+                return
 
-                    # Проверка, было ли изображение загружено успешно
-                    if image is None:
-                        messagebox.showerror(get_image_title_errors(app.isTranslate),
-                                             get_image_load_error_message(app.isTranslate))
+            # Устанавливаем путь к Tesseract для pytesseract
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
-                    # Преобразование изображения в оттенки серого
-                    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            # Открываем диалог выбора изображения
+            image_path = filedialog.askopenfilename(
+                title="Выберите изображение",
+                filetypes=(("Изображения", "*.jpg;*.png;*.gif"), ("Все файлы", "*.*"))
+            )
 
-                    # Применение порогового значения для выделения текста
-                    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            if image_path:
+                # Загрузка изображения
+                image = cv2.imread(image_path)
+                if image is None:
+                    messagebox.showerror(
+                        get_image_title_errors(app.isTranslate),
+                        get_image_load_error_message(app.isTranslate)
+                    )
+                    return
 
-                    # Использование pytesseract для распознавания текста
-                    recognized_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+                # Преобразование изображения в оттенки серого
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-                    if recognized_text:
-                        self.input_entry.delete("1.0", tk.END)
-                        self.input_entry.insert("1.0", recognized_text)
-                    else:
-                        messagebox.showinfo("Result", get_no_text_recognized_message(app.isTranslate))
+                # Применение порогового значения для выделения текста
+                _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+                # Использование pytesseract для распознавания текста
+                recognized_text = pytesseract.image_to_string(thresh, lang='rus+eng')
+
+                if recognized_text.strip():
+                    self.input_entry.delete("1.0", tk.END)
+                    self.input_entry.insert("1.0", recognized_text)
                 else:
-                    messagebox.showerror(get_image_title_errors(app.isTranslate),
-                                         get_select_image_message_errors(app.isTranslate))
+                    messagebox.showinfo("Result", get_no_text_recognized_message(app.isTranslate))
+            else:
+                messagebox.showerror(
+                    get_image_title_errors(app.isTranslate),
+                    get_select_image_message_errors(app.isTranslate)
+                )
         except Exception as e:
             # Получаем информацию об ошибке
             error_message = f"{get_text_recognition_error_message(app.isTranslate)}\n{str(e)}\n\n"
-            error_message +=traceback.format_exc()
+            error_message += traceback.format_exc()
             messagebox.showerror("Error", error_message)
 
     def update_model_list(self, category):
@@ -988,14 +1074,6 @@ class ChatApp(ctk.CTk):
         if self.tray_icon:
             # Останавливаем текущую иконку трея (если это необходимо)
             self.tray_icon.stop()
-
-        # Дополнительные действия для Linux
-        if platform.system() == "Linux":
-            # На некоторых Linux-системах может потребоваться принудительное обновление состояния окна
-            self.deiconify()
-            self.update_idletasks()
-            self.lift()
-            self.attributes('-type', 'normal')
 
         # Восстанавливаем окно
         self.deiconify()
@@ -1243,7 +1321,7 @@ class ChatApp(ctk.CTk):
             self.img_reco_button.configure(text="Распознать текст")
             self.search_label.configure(text="Поиск модели:")
             self.speech_reco_button.configure(text="Голосовой ввод")
-            self.read_var.configure(text="Прочитать текст")
+            self.read_checkbox.configure(text="Прочитать текст")
         else:
             # Переключаем на английский
             self.model_label.configure(text="Select model:")
@@ -1263,9 +1341,10 @@ class ChatApp(ctk.CTk):
             self.img_reco_button.configure(text="Recognize text")
             self.search_label.configure(text="Model Search:")
             self.speech_reco_button.configure(text="Voice input")
-            self.read_var.configure(text="Read text")
+            self.read_checkbox.configure(text="Read text")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
+        self.create_menu()  # Пересоздаем меню после изменения языка
 
 
 if __name__ == "__main__":

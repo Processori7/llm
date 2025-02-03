@@ -73,7 +73,7 @@ Unix:
    Решение:  
 ```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
     ```sudo apt-get install ffmpeg libav-tools```  
-    ```pip install PyAudio```
+    ```pip install PyAudio```  
 И заново выполнить:  
 ```pip install -r requirements.txt```  
    И заново выполнить:  
@@ -83,16 +83,22 @@ Unix:
 ```sudo apt-get install python3-tk```  
 4. Модуль aiohttp не найден.  
    Решение:  
-   ```sudo apt install python3-aiohttp```
+   ```sudo apt install python3-aiohttp```  
 5. Установить дополнительные модули:
-```pip install colorama python-xlib aiohttp```
-6. Ошибка при запуске:  
-"PyGetWindow currently does not support this platform."
-"If you have knowledge of the platform's windowing system, please contribute! "
-"https://github.com/asweigart/pygetwindow"
-   Решение:
+```pip install colorama python-xlib aiohttp```  
+6. Установка Tesseract OCR - для распознавания текста на картинке:  
+```sudo apt update && sudo apt upgrade```  
+```sudo apt install tesseract-ocr```  
+```sudo apt install libtesseract-dev```  
+Для поддержки русского языка:  
+```sudo apt install tesseract-ocr-rus```
+7. Ошибка при запуске:  
+"PyGetWindow currently does not support this platform."  
+"If you have knowledge of the platform's windowing system, please contribute! "  
+"https://github.com/asweigart/pygetwindow"  
+   Решение:  
 Пока PyGetWindow официально не поддерживает Linux, но можно попробовать исправить эту проблему. Выполните эти действия:  
-Скачайте файлы отсюда: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow  
+Скачайте файлы отсюда: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow   
 В вашем виртуальном окружении найдите папку PyGetWindow и копируйте новые файлы туда с заменой.  
 После этого заново попробуйте запустить Ваше приложение.  
 Код тестировался на последней версии Lubuntu с последними версиями пакетов Tkinter и CustomTkinter, в теории код может быть запущен и на других OC с поддержкой X-lib.  
@@ -107,23 +113,25 @@ And re-execute:
    Decision:  
 ```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
     ```sudo apt-get install ffmpeg libav-tools```  
-    ```pip install PyAudio```
+    ```pip install PyAudio```  
 And re-execute:  
-```pip install -r requirements.txt```  
-   And re-execute:  
-```pip install -r requirements.txt```  
+```pip install -r requirements.txt```   
 3. The Tkinter module was not found.  
 Decision:  
 ```sudo apt-get install python3-tk```  
 4. The aiohttp module was not found.  
    Solution:
-``sudo apt install python3-aiohttp``
+```sudo apt install python3-aiohttp```  
 5. Install additional modules:
-``pip install colorama python-xlib aiohttp``
-6. Startup error:
-"PyGetWindow currently does not support this platform."
-"If you have knowledge of the platform's windowing system, please contribute! "
-"https://github.com/asweigart/pygetwindow"
+```pip install colorama python-xlib aiohttp```  
+6. Install Tesseract OCR:  
+```sudo apt update && sudo apt upgrade```  
+```sudo apt install tesseract-ocr```  
+```sudo apt install libtesseract-dev```  
+7. Startup error:  
+"PyGetWindow currently does not support this platform."  
+"If you have knowledge of the platform's windowing system, please contribute! "  
+"https://github.com/asweigart/pygetwindow"  
    Decision:
 PyGetWindow does not officially support Linux yet, but you can try to fix this problem. Follow these steps:  
 Download the files from here: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow  
