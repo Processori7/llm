@@ -933,7 +933,7 @@ class ChatApp(ctk.CTk):
                     self.input_entry.delete("1.0", tk.END)
                     self.input_entry.insert("1.0", "Request to the speech recognition service failed.")
                 except Exception:
-                    pass
+                    return
 
 
     def filter_models(self, *args):
