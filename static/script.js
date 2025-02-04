@@ -5,24 +5,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveChatButton = document.getElementById('save-chat-button');
     const clearChatButton = document.getElementById('clear-chat-button');
     const modelSelect = document.getElementById('model-select');
+    const modelSearch = document.getElementById('model-search'); // Поле поиска
     const swaggerButton = document.getElementById('swagger-button');
     const langButton = document.getElementById('lang-button');
-
     let chatHistory = [];
     let isRussian = true;
+    let allModels = []; // Хранение всех моделей
 
     // Загрузка моделей
     fetch('/api/ai/models')
         .then(response => response.json())
         .then(data => {
-            data.models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                option.textContent = model;
-                modelSelect.appendChild(option);
-            });
+            allModels = data.models; // Сохраняем все модели
+            renderModels(allModels); // Отображаем все модели
         })
         .catch(error => console.error('Ошибка при загрузке моделей:', error));
+
+    // Функция отображения моделей
+    function renderModels(models) {
+        modelSelect.innerHTML = ''; // Очищаем выпадающий список
+        models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modelSelect.appendChild(option);
+        });
+    }
+
+    // Поиск моделей
+    modelSearch.addEventListener('input', () => {
+        const query = modelSearch.value.toLowerCase(); // Получаем поисковый запрос
+        const filteredModels = allModels.filter(model =>
+            model.toLowerCase().includes(query)
+        );
+        renderModels(filteredModels); // Отображаем отфильтрованные модели
+    });
 
     // Отправка сообщения
     sendButton.addEventListener('click', sendMessage);
@@ -36,12 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessage() {
         const message = userInput.value.trim();
         if (message === '') return;
-
         chatHistory.push({ sender: 'user', message: message });
         appendMessage('user', message);
-
         const selectedModel = modelSelect.value;
-
         fetch('/api/gpt/ans', {
             method: 'POST',
             headers: {
@@ -59,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
             appendMessage('bot', 'Произошла ошибка при получении ответа.');
             console.error('Ошибка при отправке сообщения:', error);
         });
-
         userInput.value = '';
     }
 
@@ -98,12 +111,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateLanguage() {
         if (isRussian) {
             document.querySelector('.model-selector label').textContent = 'Выбор моделей:';
+            modelSearch.placeholder = 'Поиск...';
             sendButton.textContent = 'Отправить';
             saveChatButton.textContent = 'Сохранить чат';
             clearChatButton.textContent = 'Очистить чат';
             langButton.textContent = 'English';
         } else {
             document.querySelector('.model-selector label').textContent = 'Model Selection:';
+            modelSearch.placeholder = 'Search...';
             sendButton.textContent = 'Send';
             saveChatButton.textContent = 'Save Chat';
             clearChatButton.textContent = 'Clear Chat';

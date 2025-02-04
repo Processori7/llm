@@ -31,7 +31,7 @@ h1 {
 
 .chat-box {
     width: 100%;
-    max-width: 800px; /* Ограничение ширины для лучшего отображения */
+    max-width: 1000px; /* Ограничение ширины для лучшего отображения */
     height: 300px;
     background-color: #1e1e1e;
     border: 1px solid #444444;
@@ -43,17 +43,7 @@ h1 {
     font-size: 1em;
 }
 
-.model-selector {
-    display: flex;
-    justify-content: center; /* Центрирование по горизонтали */
-    align-items: center;
-    margin-bottom: 10px;
-    width: 100%; /* Занимает всю ширину контейнера */
-}
 
-.model-selector label {
-    margin-right: 10px;
-}
 
 select {
     width: 100%;
@@ -149,5 +139,31 @@ button:last-child {
 
     select {
         max-width: 100%; /* Полная ширина на маленьких экранах */
+    }
+}
+.model-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.model-selector input[type="text"] {
+    width: 100%;
+    max-width: 200px;
+    padding: 10px;
+    border: 1px solid #444444;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: #ffffff;
+    margin-left: 10px;
+}
+
+@media (max-width: 600px) {
+    .model-selector input[type="text"],
+    .model-selector select {
+        max-width: 100%;
+        margin-bottom: 10px;
     }
 }

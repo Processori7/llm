@@ -1124,7 +1124,7 @@ class ChatApp(ctk.CTk):
 
                     self.input_entry.delete("1.0", "end-1c")  # Очистка поля ввода
         except Exception as e:
-            messagebox.showerror("Возникла ошибка", e)
+            messagebox.showerror("Возникла ошибка", str(e))
 
     def record_history(self, event=None):
         """Записываем текущее состояние текста в историю."""
