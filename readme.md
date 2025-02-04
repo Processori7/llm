@@ -21,6 +21,7 @@ Unix:
 ```cd llm```  
 3. Создать виртуальное окружение:  
 ```python -m venv venv```  
+На Unix: ```python3 -m venv venv```  
 4. Активировать виртуальное окружение:  
 . На Windows:  
 ```venv\Scripts\activate```  
@@ -30,6 +31,47 @@ Unix:
 ```pip install -r requirements.txt```
 6. Запустить файл:
 ```python llm.py```  
+
+## Известные проблемы:  
+Так как пока не принят пулл реквест, то при запуске кода может возникнуть ошибка:  
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, Qwenlm, Marcus, WEBS as w  
+ImportError: cannot import name 'Qwenlm' from 'webscout' (E:\Users\User\Desktop\LLM\.venv\Lib\site-packages\webscout\__init__.py)   
+Решение:  
+Скачать файлы init.py и Qwenlm.py [отсюда](https://github.com/Processori7/Webscout/tree/qwenlm/webscout/Provider) и копировать с заменой эти файлы в папку venv\Lib\site-packages\webscout\Provider   
+
+## Известные проблемы при установке на Unix:
+1. Не удаётся установить PyAudio.  
+   Решение:  
+```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
+    ```sudo apt-get install ffmpeg libav-tools```  
+    ```pip install PyAudio```  
+И заново выполнить:  
+```pip install -r requirements.txt```  
+2. Модуль Tkinter не найден.  
+Решение:
+```sudo apt-get install python3-tk```  
+3. Модуль aiohttp не найден.  
+   Решение:
+   ```sudo apt install python3-aiohttp```  
+4. Установить дополнительные модули:
+```pip install colorama python-xlib aiohttp```  
+5. Установка Tesseract OCR - для распознавания текста на картинке:  
+```sudo apt update && sudo apt upgrade```  
+```sudo apt install tesseract-ocr```  
+```sudo apt install libtesseract-dev```  
+Для поддержки русского языка:
+```sudo apt install tesseract-ocr-rus```  
+6. Ошибка при запуске:  
+"PyGetWindow currently does not support this platform."  
+"If you have knowledge of the platform's windowing system, please contribute! "  
+"https://github.com/asweigart/pygetwindow"  
+   Решение:  
+Пока PyGetWindow официально не поддерживает Linux, но можно попробовать исправить эту проблему. Выполните эти действия:  
+Скачайте файлы [отсюда](https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow)   
+В вашем виртуальном окружении найдите папку PyGetWindow и копируйте новые файлы туда с заменой.  
+После этого заново попробуйте запустить Ваше приложение.  
+Код тестировался на последней версии Lubuntu с последними версиями пакетов Tkinter и CustomTkinter, в теории код может быть запущен и на других OC с поддержкой X-lib.  
+
 
 # Description
 This is an application that allows you to use free services from the Webscout package.  
@@ -46,13 +88,14 @@ This is an application that allows you to use free services from the Webscout pa
 - Read text aloud
 # Usage
 1. Clone the repository:  
-`the bastard clone https://github.com/Processori7/llm.git `
+`git clone https://github.com/Processori7/llm.git `
 2. Navigate to the folder (on Windows):  
 ```cd /d llm```  
 Unix:  
 ```cd llm```  
 3. Create a virtual environment:  
-```python -m venv venv```
+```python -m venv venv```  
+On Unix: ```python3 -m venv venv```
 4. Activate the virtual environment:  
 . On Windows:  
 ```venv\Scripts\activate```  
@@ -63,61 +106,23 @@ Unix:
 6. Run the file:
 ```python llm.py```  
 
-## Известные проблемы при установке на Unix:  
-1. Не устанавливается модуль playsound.  
-   Решение:  
-```pip install playsound==1.2.2```  
-И заново выполнить:  
-```pip install -r requirements.txt```  
-2. Не удаётся установить PyAudio.  
-   Решение:  
-```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
-    ```sudo apt-get install ffmpeg libav-tools```  
-    ```pip install PyAudio```  
-И заново выполнить:  
-```pip install -r requirements.txt```  
-   И заново выполнить:  
-```pip install -r requirements.txt```  
-3. Модуль Tkinter не найден.  
-Решение:  
-```sudo apt-get install python3-tk```  
-4. Модуль aiohttp не найден.  
-   Решение:  
-   ```sudo apt install python3-aiohttp```  
-5. Установить дополнительные модули:
-```pip install colorama python-xlib aiohttp```  
-6. Установка Tesseract OCR - для распознавания текста на картинке:  
-```sudo apt update && sudo apt upgrade```  
-```sudo apt install tesseract-ocr```  
-```sudo apt install libtesseract-dev```  
-Для поддержки русского языка:  
-```sudo apt install tesseract-ocr-rus```
-7. Ошибка при запуске:  
-"PyGetWindow currently does not support this platform."  
-"If you have knowledge of the platform's windowing system, please contribute! "  
-"https://github.com/asweigart/pygetwindow"  
-   Решение:  
-Пока PyGetWindow официально не поддерживает Linux, но можно попробовать исправить эту проблему. Выполните эти действия:  
-Скачайте файлы отсюда: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow   
-В вашем виртуальном окружении найдите папку PyGetWindow и копируйте новые файлы туда с заменой.  
-После этого заново попробуйте запустить Ваше приложение.  
-Код тестировался на последней версии Lubuntu с последними версиями пакетов Tkinter и CustomTkinter, в теории код может быть запущен и на других OC с поддержкой X-lib.  
+## Known issues:  
+Since the pool request has not been accepted yet, an error may occur when running the code.:  
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, File, Find Search, DARKAI, VLM, Turbo Seek, Netwrck, Qwenlm, Marcus, WEB asp  
+ImportError: cannot import name 'Qwenlm' from 'webscout' (E:\Users\User\Desktop\LLM\.venv\Lib\site-packages\webscout\__init__.py )  
+Solution:  
+Download files init.py and Qwenlm.py [from here](https://github.com/Processori7/Webscout/tree/qwenlm/webscout/Provider) and copy and replace these files to the venv\Lib\site-packages\webscout\Provider folder  
 
-## Known problems when installing on Unix:  
-1. The playsound module is not installed or another error.  
-   Decision:  
-```pip install playsound==1.2.2```  
-And re-execute:  
-```pip install -r requirements.txt```  
-2. PyAudio cannot be installed.  
+## Known problems when installing on Unix:
+1. PyAudio cannot be installed.  
    Decision:  
 ```sudo apt-get install libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0```  
     ```sudo apt-get install ffmpeg libav-tools```  
     ```pip install PyAudio```  
 And re-execute:  
 ```pip install -r requirements.txt```   
-3. The Tkinter module was not found.  
-Decision:  
+2. The Tkinter module was not found.  
+Solution:
 ```sudo apt-get install python3-tk```  
 4. The aiohttp module was not found.  
    Solution:
@@ -134,7 +139,7 @@ Decision:
 "https://github.com/asweigart/pygetwindow"  
    Decision:
 PyGetWindow does not officially support Linux yet, but you can try to fix this problem. Follow these steps:  
-Download the files from here: https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow  
+Download the files [from here](https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow)  
 In your virtual environment, find the PyGetWindow folder and copy the new files there with the replacement.  
 After that, try launching your application again.  
 The code was tested on the latest version of Lubuntu with the latest versions of the Tkinter and CustomTkinter packages. In theory, the code can be run on other OCS with X-lib support.

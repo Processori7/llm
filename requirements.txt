@@ -30,3 +30,4 @@ fastapi
 pyttsx3
 aiohttp
 fake_useragent
+colorama
