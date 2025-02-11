@@ -34,7 +34,7 @@ from fastapi.responses import HTMLResponse
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.46"
+CURRENT_VERSION = "1.47"
 
 prompt = """###INSTRUCTIONS###
 
@@ -95,7 +95,6 @@ def check_for_updates():
         response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
         response.raise_for_status()
         latest_release = response.json()
-
         # Получение ссылки на файл llm.exe последней версии
         download_url = None
         assets = latest_release["assets"]
@@ -117,11 +116,17 @@ def check_for_updates():
             latest_version = latest_version_str
 
         if version.parse(latest_version) > version.parse(CURRENT_VERSION):
-            # Предложение пользователю обновление
-            if messagebox.showwarning("Доступно обновление",
-                                      f"Доступна новая версия {latest_version}. Хотите обновить?", icon='warning',
-                                      type='yesno') == 'yes':
-                update_app(download_url)
+            if platform.system() == "Windows":
+                # Предложение пользователю обновление
+                if messagebox.showwarning("Доступно обновление",
+                                          f"Доступна новая версия {latest_version}. Хотите обновить?", icon='warning',
+                                          type='yesno') == 'yes':
+                    update_app(download_url)
+            else:
+                if messagebox.showwarning("Доступно обновление",
+                                          f"Доступна новая версия {latest_version}. Хотите обновить?", icon='warning',
+                                          type='yesno') == 'yes':
+                    os.system("git pull")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
@@ -291,6 +296,7 @@ def communicate_with_Phind(user_input):
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
 model_functions = {
+"GPT-O3-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "o3-mini"),
 "GPT-4o-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
 "gpt-4o (DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
 "Gpt-4o (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4o"),
@@ -350,7 +356,7 @@ model_functions = {
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
 "Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),
-"Llama 3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
+"Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
 "Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
 "MiniCPM-Llama3-V-2_5(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
 "Llava-1.5-7b-hf(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
