@@ -31,3 +31,7 @@ pyttsx3
 aiohttp
 fake_useragent
 colorama
+python-docx
+openpyxl
+odfpy
+antiword

@@ -10,7 +10,8 @@
 - Голосовой ввод
 - Очистка чата
 - Возможность использовать режим API - при активации открывается страница, ссылку на неё можно отправить другим пользовать и использовать чат в локальной сети, также доступна страница со Swagger  
-- Читать текст в слух
+- Читать текст в слух  
+- Читать текст из файлов .txt, .docx, .xlsx, .xls, .csv, .odt, .doc и вставлять его в поле ввода
 
 # Использование
 1. Клонировать репозиторий:  
@@ -85,7 +86,8 @@ This is an application that allows you to use free services from the Webscout pa
 - Voice input
 - Clearing the chat
 - The ability to use API mode - upon activation, a page opens, a link to it can be sent to others to use and use chat on the local network, a page with Swagger is also available  
-- Read text aloud
+- Read text aloud  
+- Read text from files .txt, .docx, .xlsx, .xls, .csv, .odt, .doc and insert in input field
 # Usage
 1. Clone the repository:  
 `git clone https://github.com/Processori7/llm.git `

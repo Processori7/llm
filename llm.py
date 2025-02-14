@@ -17,8 +17,12 @@ import uvicorn
 import socket
 import pyttsx3
 import platform
+import pandas as pd
+import odf.text
+import odf.opendocument
+import subprocess
 
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, Qwenlm, Marcus, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, Qwenlm, Marcus, DeepFind, WEBS as w
 from webscout import ArtbitImager
 from datetime import datetime
 from tkinter import messagebox, filedialog, PhotoImage
@@ -29,12 +33,12 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-
+from docx import Document
 
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.47"
+CURRENT_VERSION = "1.48"
 
 prompt = """###INSTRUCTIONS###
 
@@ -299,7 +303,6 @@ model_functions = {
 "GPT-O3-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "o3-mini"),
 "GPT-4o-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
 "gpt-4o (DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
-"Gpt-4o (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4o"),
 "Claude-3-haiku (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "openai-o3-mini-high (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o3_mini_high"),
 "openai-o3-mini-medium (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o3_mini_medium"),
@@ -329,6 +332,17 @@ model_functions = {
 "solar-1-mini (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
 "dolphin-2.5 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "dolphin_2_5"),
 "BlackboxAI": lambda user_input: communicate_with_BlackboxAI(user_input, "blackboxai"),
+"Deepseek-v3 (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "deepseek-v3"),
+"Deepseek-r1 (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "deepseek-r1"),
+"Deepseek-chat (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "deepseek-chat"),
+"Mixtral-small-28b (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "mixtral-small-28b"),
+"Dbrx-instruct (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "dbrx-instruct"),
+"Qwq-32b (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "qwq-32b"),
+"Hermes-2-dpo (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "hermes-2-dpo"),
+"Claude-3.5-sonnet (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-3.5-sonnet"),
+"Gemini-1.5-flash (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gemini-1.5-flash"),
+"Gemini-1.5-pro (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gemini-1.5-pro"),
+"Gemini-2.0-flash (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gemini-2.0-flash"),
 "gpt4mini (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gpt4mini"),
 "llama-3.1-lumimaid-8b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
 "grok-2 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "grok"),
@@ -712,12 +726,18 @@ class ChatApp(ctk.CTk):
                                                  command=self.recognize_text,
                                                  font=("Consolas", font_size), text_color="white",
                                                  height=button_height)
+
+            self.read_file_button = ctk.CTkButton(self.button_frame, text="Открыть файл",
+                                                 command=self.read_file,
+                                                 font=("Consolas", font_size), text_color="white",
+                                                 height=button_height)
             # Проверка высоты экрана
             if self.winfo_screenheight() >= 900:
                 # Дополнительные кнопки для больших экранов
 
                 self.img_reco_button.pack(side="top", padx=5, pady=10)
 
+                self.read_file_button.pack(side="top", padx=5, pady=10)
 
                 self.theme_button.pack(side="top", padx=5, pady=10)
 
@@ -767,8 +787,10 @@ class ChatApp(ctk.CTk):
         # Меню "Файл"
         file_menu = tk.Menu(menubar, tearoff=0)
         if not self.isTranslate:
+            file_menu.add_command(label="Открыть файл", command=self.read_file)
             file_menu.add_command(label="Выход", command=self.on_exit)
         else:
+            file_menu.add_command(label="Open file", command=self.read_file)
             file_menu.add_command(label="Exit", command=self.on_exit)
         menubar.add_cascade(label="Файл" if not self.isTranslate else "File", menu=file_menu)
 
@@ -797,6 +819,68 @@ class ChatApp(ctk.CTk):
         menubar.add_cascade(label="Инструменты" if not self.isTranslate else "Tools", menu=tools_menu)
 
         self.config(menu=menubar)
+
+    def read_file(self):
+        """
+        Читает содержимое файла любого поддерживаемого формата:
+        .txt, .docx, .xlsx, .xls, .csv, .odt, .doc
+        """
+        ans = ""
+        file_path = tk.filedialog.askopenfilename(filetypes=[("Text files", ".txt .doc .docx .xlsx .xls .csv .odt")])
+        if not os.path.exists(file_path):
+            return "Файл не найден."
+
+        _, extension = os.path.splitext(file_path)
+        extension = extension.lower()  # Унифицируем расширение
+
+        try:
+            if extension == '.txt':
+                # Чтение текстового файла
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    ans = file.read()
+
+            elif extension == '.docx':
+                # Чтение DOCX файла
+                doc = Document(file_path)
+                ans = ("\n".join([paragraph.text for paragraph in doc.paragraphs]))
+
+            elif extension in ['.xlsx', '.xls']:
+                # Чтение Excel файла
+                try:
+                    data = pd.read_excel(file_path, engine='openpyxl')  # Для xlsx
+                except ValueError:
+                    data = pd.read_excel(file_path)  # Для xls
+                    ans = data.to_string(index=False)
+
+            elif extension == '.csv':
+                # Чтение CSV файла
+                data = pd.read_csv(file_path)
+                ans = data.to_string(index=False)
+
+            elif extension == '.odt':
+                # Чтение ODT файла
+                doc = odf.opendocument.load(file_path)
+                text_elements = []
+                for paragraph in doc.getElementsByType(odf.text.P):
+                    text_elements.append(paragraph.textContent)
+                    ans = "\n".join(text_elements)
+
+            elif extension == '.doc':
+                # Чтение DOC файла с помощью antiword
+                try:
+                    result = subprocess.run(['antiword', file_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                            text=True)
+                    if result.returncode == 0:
+                        ans = result.stdout
+                    else:
+                        return f"Ошибка при чтении DOC файла: {result.stderr}"
+                except FileNotFoundError:
+                    return "Программа antiword не найдена. Убедитесь, что она установлена."
+            else:
+                return f"Не поддерживаемый формат файла: {extension}"
+            self.input_entry.insert(tk.END, ans)
+        except Exception as e:
+            return f"Произошла ошибка: {str(e)}"
 
     def toggle_read_text(self):
         self.read_var.set(not self.read_var.get())
@@ -1315,6 +1399,7 @@ class ChatApp(ctk.CTk):
             self.clear_button.configure(text="Очистить чат")
             self.theme_button.configure(text="Светлая тема")
             self.lang_button.configure(text="English")
+            self.read_file_button.configure(text="Открыть файл")
             self.history_checkbox.configure(text="Вести историю")
             self.exit_button.configure(text="Выход")
             self.context_menu.add_command(label="Копировать", command=self.copy_text)
@@ -1336,6 +1421,7 @@ class ChatApp(ctk.CTk):
             self.theme_button.configure(text="Light theme")
             self.lang_button.configure(text="Русский")
             self.history_checkbox.configure(text="Keep history")
+            self.read_file_button.configure(text="Open file")
             self.exit_button.configure(text="Exit")
             self.context_menu.add_command(label="Copy", command=self.copy_text)
             self.context_menu.add_command(label="Select All", command=self.select_all)
