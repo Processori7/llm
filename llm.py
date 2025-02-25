@@ -22,8 +22,9 @@ import odf.text
 import odf.opendocument
 import subprocess
 
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, Qwenlm, Marcus, DeepFind, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout import ArtbitImager
+from webscout.Provider.AISEARCH import Isou
 from datetime import datetime
 from tkinter import messagebox, filedialog, PhotoImage
 from PIL import Image
@@ -38,7 +39,7 @@ from docx import Document
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.48"
+CURRENT_VERSION = "1.49"
 
 prompt = """###INSTRUCTIONS###
 
@@ -186,9 +187,30 @@ def communicate_with_Pollinations_chat(user_input, model):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
+def communicate_with_ISou(user_input, model):
+    try:
+        ai = Isou()
+        ai.model = model
+        response = ai.search(user_input, stream=True, raw=False)
+        all_text = ""
+        all_links = []
+        for chunk in response:
+            text = chunk.get("text", "")
+            links = chunk.get("links", [])
+            all_text += text
+            all_links.extend(links)
+
+        unique_links = list(set(all_links))
+
+        all_text = re.sub(r'\s+', ' ', all_text).strip()
+        final_text = ai.replace_links_with_numbers(all_text, unique_links)
+        return final_text
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
 def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
     try:
-        ai = Qwenlm(timeout=5000)
+        ai = QwenLM(cookies_path="cookies.json", logging=False)
         ai.chat_type=chat_type
         ai.model = model
         ai.system_prompt = prompt
@@ -364,8 +386,11 @@ model_functions = {
 "qwen-max-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
 "qvq-72b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
 "qvq-32b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
+"DeepSeek-R1-Distill-Qwen-32B_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
+"Qwen2.5-72B-Instruct-128K_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
+"Deepseek-reasoner_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
 "KoboldAI": communicate_with_KoboldAI,
-"Phind_Web": communicate_with_Phind,
+"Phind": communicate_with_Phind,
 "Felo_Web": communicate_with_Felo,
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
