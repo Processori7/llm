@@ -210,7 +210,7 @@ def communicate_with_ISou(user_input, model):
 
 def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
     try:
-        ai = QwenLM(cookies_path="cookies.json", logging=False)
+        ai = QwenLM(cookies_path=resource_path("cookies.json"), logging=False)
         ai.chat_type=chat_type
         ai.model = model
         ai.system_prompt = prompt
