@@ -240,6 +240,10 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/odf;odf/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/cookies.json;."
   }
  ],
  "nonPyinstallerOptions": {
