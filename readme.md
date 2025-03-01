@@ -11,7 +11,8 @@
 - Очистка чата
 - Возможность использовать режим API - при активации открывается страница, ссылку на неё можно отправить другим пользовать и использовать чат в локальной сети, также доступна страница со Swagger  
 - Читать текст в слух  
-- Читать текст из файлов .txt, .docx, .xlsx, .xls, .csv, .odt, .doc и вставлять его в поле ввода
+- Читать текст из файлов .txt, .docx, .xlsx, .xls, .csv, .odt, .doc и вставлять его в поле ввода  
+- Чтение параметров из файла .env (пример ниже)  
 
 # Использование
 1. Клонировать репозиторий:  
@@ -87,7 +88,8 @@ This is an application that allows you to use free services from the Webscout pa
 - Clearing the chat
 - The ability to use API mode - upon activation, a page opens, a link to it can be sent to others to use and use chat on the local network, a page with Swagger is also available  
 - Read text aloud  
-- Read text from files .txt, .docx, .xlsx, .xls, .csv, .odt, .doc and insert in input field
+- Read text from files .txt, .docx, .xlsx, .xls, .csv, .odt, .doc and insert in input field  
+- Reading parameters from an.env file (example below)  
 # Usage
 1. Clone the repository:  
 `git clone https://github.com/Processori7/llm.git `
@@ -144,4 +146,14 @@ PyGetWindow does not officially support Linux yet, but you can try to fix this p
 Download the files [from here](https://github.com/Processori7/PyGetWindow/tree/experimental_Linux_support/src/pygetwindow)  
 In your virtual environment, find the PyGetWindow folder and copy the new files there with the replacement.  
 After that, try launching your application again.  
-The code was tested on the latest version of Lubuntu with the latest versions of the Tkinter and CustomTkinter packages. In theory, the code can be run on other OCS with X-lib support.
+The code was tested on the latest version of Lubuntu with the latest versions of the Tkinter and CustomTkinter packages. In theory, the code can be run on other OCS with X-lib support.  
+## Example .env file/ Пример файла .env  
+FONT_SIZE=15  
+HOST=127.0.0.1  
+PORT=8000  
+MODEL=2  
+IS_TRANSLATE=False  
+IMG_FOLDER=My_img  
+WRITE_HISTORY=True  
+MODE=light  
+DEFAULT_COLOR_THEM=green  

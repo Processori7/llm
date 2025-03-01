@@ -22,7 +22,7 @@ import odf.text
 import odf.opendocument
 import subprocess
 
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, DARKAI, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout import ArtbitImager
 from webscout.Provider.AISEARCH import Isou
 from datetime import datetime
@@ -35,11 +35,49 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from docx import Document
+from dotenv import load_dotenv
+
+# Загружаем переменные из .env файла в окружение
+load_dotenv()
+
+FONT_SIZE_KEY = "FONT_SIZE"
+HOST_KEY = "HOST"
+PORT_KEY = "PORT"
+MODEL_KEY = "MODEL"
+IS_TRANSLATE_KEY = "IS_TRANSLATE"
+IMG_FOLDER_KEY = "IMG_FOLDER"
+MODE_KEY = "MODE"
+DEFAULT_COLOR_THEM_KEY = "DEFAULT_COLOR_THEM"
+WRITE_HISTORY_KEY = "WRITE_HISTORY"
+
+# Инициализируем переменные значениями по умолчанию (_val добавлено к имени переменной)
+font_size_val  = None
+host_val  = None
+port_val = None
+model_val  = None
+isTranslate_val  = None
+img_folder_val  = None
+mode_val  = None
+def_color_them_val  = None
+write_history_val = None
+
+# Проверяем, существует ли файл .env и считываем значения переменных
+if os.path.exists(".env"):
+    font_size_val = os.getenv(FONT_SIZE_KEY)
+    host_val = os.getenv(HOST_KEY)
+    port_val = os.getenv(PORT_KEY)
+    model_val = os.getenv(MODEL_KEY)
+    isTranslate_val = os.getenv(IS_TRANSLATE_KEY)
+    img_folder_val = os.getenv(IMG_FOLDER_KEY)
+    mode_val = os.getenv(MODE_KEY)
+    def_color_them_val = os.getenv(DEFAULT_COLOR_THEM_KEY)
+    write_history_val = os.getenv(WRITE_HISTORY_KEY)
+
 
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.49"
+CURRENT_VERSION = "1.50"
 
 prompt = """###INSTRUCTIONS###
 
@@ -78,7 +116,10 @@ ALWAYS use an answering example for a first message structure.
 ALWAYS include links to sources at the end if required in the request.
 """ # Добавление навыков ИИ и другие тонкие настройки
 
-img_folder = 'img'
+if img_folder_val is not None:
+    img_folder = img_folder_val
+else:
+    img_folder = 'img'
 
 # Функция для получения корректного пути к ресурсам
 def resource_path(relative_path):
@@ -270,15 +311,6 @@ def communicate_with_YouChat(user_input, model):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_DarkAi(user_input, model):
-    try:
-        ai = DARKAI()
-        ai.model = model
-        response = ai.chat(user_input)
-        return response
-    except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
-
 def communicate_with_DuckDuckGO(user_input, model):
     try:
         response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
@@ -324,7 +356,6 @@ def communicate_with_Phind(user_input):
 model_functions = {
 "GPT-O3-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "o3-mini"),
 "GPT-4o-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
-"gpt-4o (DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "gpt-4o"),
 "Claude-3-haiku (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
 "openai-o3-mini-high (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o3_mini_high"),
 "openai-o3-mini-medium (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o3_mini_medium"),
@@ -396,7 +427,6 @@ model_functions = {
 "Marcus_Web":communicate_with_Marcus,
 "Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),
 "Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
-"Llama-3.1-405B(DarkAi)": lambda user_input: communicate_with_DarkAi(user_input, "llama-3-405b"),
 "MiniCPM-Llama3-V-2_5(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
 "Llava-1.5-7b-hf(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
 "Artbit_img":lambda user_input:communicate_with_ArtBit(user_input)
@@ -550,17 +580,29 @@ def communicate_with_ArtBit(user_input):
         images = provider.generate(user_input)
         if not os.path.exists(img_folder):
             os.makedirs(img_folder)
-        provider.save(images, dir='img')
+        provider.save(images, dir=img_folder)
         return "Ok. Check img folder"
     except Exception as e:
         return f"{get_error_gen_img_messages(app.isTranslate)}: {str(e)}"
+
+def get_bool_val(val):
+    if val in ["True", "true"]:
+        return True
+    else:
+        return False
 
 class ChatApp(ctk.CTk):
     def __init__(self):
         try:
             super().__init__()
-            ctk.set_appearance_mode("dark")
-            ctk.set_default_color_theme("green")
+            if mode_val is not None:
+                ctk.set_appearance_mode(mode_val)
+            else:
+                ctk.set_appearance_mode("dark")
+            if def_color_them_val is not None:
+                ctk.set_default_color_theme(def_color_them_val)
+            else:
+                ctk.set_default_color_theme("green")
 
             # Определение пути к Tesseract в зависимости от платформы
             if platform.system() == "Windows":
@@ -571,7 +613,10 @@ class ChatApp(ctk.CTk):
             pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
             self.stop_listening = None  # Объект для остановки прослушивания
-            self.isTranslate = False
+            if isTranslate_val is not None:
+                self.isTranslate = get_bool_val(isTranslate_val)
+            else:
+                self.isTranslate = False
             self.server_process = None
             self.uvicorn_server = None
             self.api_running = False
@@ -581,7 +626,10 @@ class ChatApp(ctk.CTk):
 
             self.title("AI Chat")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
-            
+            if font_size_val is not None:
+                font_size = int(font_size_val)
+            else:
+                font_size = int(min(self.winfo_screenwidth(), self.winfo_screenheight()) / 100) + 8
             # Поднимаем окно на передний план
             self.lift()
             self.focus_force()  # Устанавливаем фокус на окно
@@ -613,7 +661,6 @@ class ChatApp(ctk.CTk):
             self.chat_history_frame = ctk.CTkFrame(self)
             self.chat_history_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-            font_size = int(min(self.winfo_screenwidth(), self.winfo_screenheight()) / 100) + 8
             button_height = 30 if self.winfo_screenheight() >= 900 else 20
 
             self.chat_history = ctk.CTkTextbox(self.chat_history_frame, font=("Consolas", font_size))
@@ -639,8 +686,10 @@ class ChatApp(ctk.CTk):
             self.model_combobox = ctk.CTkOptionMenu(self.input_frame, variable=self.model_var, font=("Consolas", font_size),
                                                     values=list(model_functions.keys()))
             self.model_combobox.pack(side="left", padx=5)
-            self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
-
+            if model_val is not None:
+                self.model_combobox.set(list(model_functions.keys())[int(model_val)])
+            else:
+                self.model_combobox.set(list(model_functions.keys())[0])  # Модель по умолчанию
             # Создаем новый фрейм для выбора категории
             self.category_frame = ctk.CTkFrame(self.input_frame)
             self.category_frame.pack(side="top", padx=6)  # Устанавливаем фрейм ниже
@@ -673,6 +722,7 @@ class ChatApp(ctk.CTk):
             self.read_checkbox = ctk.CTkCheckBox(self.category_frame, text="Прочитать текст",
                                             font=("Consolas", font_size),
                                             variable=self.read_var)
+
             self.history_var = tk.BooleanVar()
             self.history_checkbox = ctk.CTkCheckBox(self.category_frame, text="Вести историю",
                                                     font=("Consolas", font_size), variable=self.history_var)
@@ -790,6 +840,8 @@ class ChatApp(ctk.CTk):
             # Привязываем события фокуса к виджетам
             self.chat_history.bind("<FocusIn>", self.set_active_widget)
             self.input_entry.bind("<FocusIn>", self.set_active_widget)
+            if get_bool_val(isTranslate_val):
+                self.toggle_lang()
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -937,7 +989,7 @@ class ChatApp(ctk.CTk):
             # Разрешаем CORS для всех источников (можно ограничить по необходимости)
             app.add_middleware(
                 CORSMiddleware,
-                allow_origins=["*"],
+                allow_origins=["*"],  # Для тестирования
                 allow_credentials=True,
                 allow_methods=["*"],
                 allow_headers=["*"],
@@ -980,13 +1032,21 @@ class ChatApp(ctk.CTk):
 
             sys.stdout = open('server_log.txt', 'w')
             sys.stderr = sys.stdout
-            config = uvicorn.Config(app, host=self.local_ip, port=8000, log_level="info")
+            if host_val is not None:
+                config = uvicorn.Config(app, host=host_val, port=port, log_level="info")
+            else:
+                config = uvicorn.Config(app, host=self.local_ip, port=port, log_level="info")
             self.uvicorn_server = uvicorn.Server(config=config)
             self.uvicorn_server.run()
 
+        port = 8000
+
+        if port_val is not None:
+            port = port_val
+
         self.server_process = threading.Thread(target=run_fastapi_app, daemon=True)
         self.server_process.start()
-        server_url = f"http://{self.local_ip}:8000/chat"
+        server_url = f"http://{host_val}:{port}/chat" if host_val else f"http://{self.local_ip}:{port}/chat"
         messagebox.showwarning("Server started", get_API_message(self.isTranslate))
         webbrowser.open(server_url)
         self.api_running = True
@@ -1234,7 +1294,7 @@ class ChatApp(ctk.CTk):
                     self.chat_history.insert(tk.END, "\n", "system_line")
                     self.chat_history.configure(state="disabled")  # Возвращаем в состояние "disabled"
 
-                    if self.history_var.get():
+                    if self.history_var.get() or write_history_val is not None and get_bool_val(write_history_val):
                         self.write_history(user_input, response)
 
                     self.input_entry.delete("1.0", "end-1c")  # Очистка поля ввода

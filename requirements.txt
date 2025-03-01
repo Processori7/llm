@@ -35,3 +35,4 @@ python-docx
 openpyxl
 odfpy
 antiword
+python-dotenv
