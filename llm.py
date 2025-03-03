@@ -22,8 +22,7 @@ import odf.text
 import odf.opendocument
 import subprocess
 
-from webscout import KOBOLDAI, BLACKBOXAI, YouChat, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
-from webscout import ArtbitImager
+from webscout import KOBOLDAI, DeepSeek, BLACKBOXAI, YouChat, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout.Provider.AISEARCH import Isou
 from datetime import datetime
 from tkinter import messagebox, filedialog, PhotoImage
@@ -232,7 +231,7 @@ def communicate_with_ISou(user_input, model):
     try:
         ai = Isou()
         ai.model = model
-        response = ai.search(user_input, stream=True, raw=False)
+        response = ai.search(user_input, stream=True, raw=True)
         all_text = ""
         all_links = []
         for chunk in response:
@@ -246,6 +245,16 @@ def communicate_with_ISou(user_input, model):
         all_text = re.sub(r'\s+', ' ', all_text).strip()
         final_text = ai.replace_links_with_numbers(all_text, unique_links)
         return final_text
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
+def communicate_with_DeepSeek(user_input, model):
+    try:
+        ai = DeepSeek()
+        ai.model = model
+        ai.system_prompt = prompt
+        response = ai.chat(user_input, stream=False)
+        return response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
@@ -417,6 +426,9 @@ model_functions = {
 "qwen-max-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
 "qvq-72b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
 "qvq-32b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
+"deepseek-v3 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-v3"),
+"deepseek-r1 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-r1"),
+"deepseek-llm-67b-chat (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-llm-67b-chat"),
 "DeepSeek-R1-Distill-Qwen-32B_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
 "Qwen2.5-72B-Instruct-128K_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
 "Deepseek-reasoner_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
@@ -429,7 +441,6 @@ model_functions = {
 "Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
 "MiniCPM-Llama3-V-2_5(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
 "Llava-1.5-7b-hf(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
-"Artbit_img":lambda user_input:communicate_with_ArtBit(user_input)
 }
 
 talk_please = {
@@ -574,17 +585,6 @@ def gen_img(user_input, model):
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
-def communicate_with_ArtBit(user_input):
-    try:
-        provider = ArtbitImager(logging=False)
-        images = provider.generate(user_input)
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-        provider.save(images, dir=img_folder)
-        return "Ok. Check img folder"
-    except Exception as e:
-        return f"{get_error_gen_img_messages(app.isTranslate)}: {str(e)}"
-
 def get_bool_val(val):
     if val in ["True", "true"]:
         return True
@@ -599,6 +599,7 @@ class ChatApp(ctk.CTk):
                 ctk.set_appearance_mode(mode_val)
             else:
                 ctk.set_appearance_mode("dark")
+
             if def_color_them_val is not None:
                 ctk.set_default_color_theme(def_color_them_val)
             else:
@@ -613,10 +614,12 @@ class ChatApp(ctk.CTk):
             pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
             self.stop_listening = None  # Объект для остановки прослушивания
+
             if isTranslate_val is not None:
                 self.isTranslate = get_bool_val(isTranslate_val)
             else:
                 self.isTranslate = False
+
             self.server_process = None
             self.uvicorn_server = None
             self.api_running = False
@@ -673,7 +676,6 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu = tk.Menu(self, tearoff=0)
             self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
             self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
-
             self.input_frame = ctk.CTkFrame(self)
             self.input_frame.pack(fill="x", padx=10, pady=10)
 
@@ -786,10 +788,14 @@ class ChatApp(ctk.CTk):
                                                     font=("Consolas", font_size), text_color="white", height=button_height)
             self.speech_reco_button.pack(side="top", padx=5, pady=10)
 
-            self.theme_button = ctk.CTkButton(self.button_frame, text="Светлая тема", command=self.toggle_theme,
-                                              font=("Consolas", font_size), text_color="white",
-                                              height=button_height)
-
+            if mode_val =="light":
+                self.theme_button = ctk.CTkButton(self.button_frame, text="Тёмная тема", command=self.toggle_theme,
+                                                  font=("Consolas", font_size), text_color="white",
+                                                  height=button_height)
+            else:
+                self.theme_button = ctk.CTkButton(self.button_frame, text="Светлая тема", command=self.toggle_theme,
+                                                  font=("Consolas", font_size), text_color="white",
+                                                  height=button_height)
             self.lang_button = ctk.CTkButton(self.button_frame, text="English", command=self.toggle_lang,
                                              font=("Consolas", font_size), text_color="white", height=button_height)
 
@@ -830,9 +836,16 @@ class ChatApp(ctk.CTk):
             self.chat_history.tag_add("system_line", "1.0")
 
             # Определение тегов для цветного текста
-            self.chat_history.tag_config("user_input", foreground="orange")
-            self.chat_history.tag_config("response", foreground="yellow")
-            self.chat_history.tag_config("system_line", foreground="cyan")
+            if mode_val == "light":
+                self.theme_button.configure(text="Тёмная тема")
+                self.chat_history.tag_config("user_input", foreground="orange")
+                self.chat_history.tag_config("response", foreground="#1a237e")
+                self.chat_history.tag_config("system_line", foreground="#000080")
+            else:
+                self.theme_button.configure(text="Светлая тема")
+                self.chat_history.tag_config("user_input", foreground="orange")
+                self.chat_history.tag_config("response", foreground="yellow")
+                self.chat_history.tag_config("system_line", foreground="cyan")
 
             # Переменная для отслеживания активного виджета
             self.active_widget = None
@@ -1295,6 +1308,8 @@ class ChatApp(ctk.CTk):
                     self.chat_history.configure(state="disabled")  # Возвращаем в состояние "disabled"
 
                     if self.history_var.get() or write_history_val is not None and get_bool_val(write_history_val):
+                        self.history_var.set(True)
+                        self.history_checkbox.select()
                         self.write_history(user_input, response)
 
                     self.input_entry.delete("1.0", "end-1c")  # Очистка поля ввода
@@ -1464,41 +1479,25 @@ class ChatApp(ctk.CTk):
         current_theme = ctk.get_appearance_mode()
         if current_theme == "Dark":
             ctk.set_appearance_mode("light")
-            self.theme_button.configure(text="Тёмная тема")
+            if not self.isTranslate:
+                self.theme_button.configure(text="Dark theme")
+            else:
+                self.theme_button.configure(text="Тёмная тема")
             self.chat_history.tag_config("user_input", foreground="orange")
-            self.chat_history.tag_config("response", foreground="#4F2982")
+            self.chat_history.tag_config("response", foreground="#1a237e")
             self.chat_history.tag_config("system_line", foreground="#000080")
         else:
             ctk.set_appearance_mode("dark")
-            self.theme_button.configure(text="Светлая тема")
+            if not self.isTranslate:
+                self.theme_button.configure(text="Light theme")
+            else:
+                self.theme_button.configure(text="Светлая тема")
             self.chat_history.tag_config("user_input", foreground="orange")
             self.chat_history.tag_config("response", foreground="yellow")
             self.chat_history.tag_config("system_line", foreground="cyan")
 
     def toggle_lang(self):
-        if self.isTranslate:
-            # Переключаем на русский
-            self.model_label.configure(text="Выберите модель:")
-            self.category_label.configure(text="Выберите категорию:")
-            self.send_button.configure(text="Отправить")
-            self.clear_button.configure(text="Очистить чат")
-            self.theme_button.configure(text="Светлая тема")
-            self.lang_button.configure(text="English")
-            self.read_file_button.configure(text="Открыть файл")
-            self.history_checkbox.configure(text="Вести историю")
-            self.exit_button.configure(text="Выход")
-            self.context_menu.add_command(label="Копировать", command=self.copy_text)
-            self.context_menu.add_command(label="Выделить всё", command=self.select_all)
-            self.context_menu.add_command(label="Вставить", command=self.paste_text)
-            self.context_menu.add_command(label="Отменить действие", command=self.undo_input)
-            self.chat_history_context_menu.add_command(label="Копировать", command=self.copy_text)
-            self.chat_history_context_menu.add_command(label="Выделить всё", command=self.select_all)
-            self.img_reco_button.configure(text="Распознать текст")
-            self.search_label.configure(text="Поиск модели:")
-            self.speech_reco_button.configure(text="Голосовой ввод")
-            self.read_checkbox.configure(text="Прочитать текст")
-        else:
-            # Переключаем на английский
+        if self.isTranslate:  # Переключаем на английский
             self.model_label.configure(text="Select model:")
             self.category_label.configure(text="Select category:")
             self.send_button.configure(text="Send")
@@ -1508,19 +1507,40 @@ class ChatApp(ctk.CTk):
             self.history_checkbox.configure(text="Keep history")
             self.read_file_button.configure(text="Open file")
             self.exit_button.configure(text="Exit")
-            self.context_menu.add_command(label="Copy", command=self.copy_text)
-            self.context_menu.add_command(label="Select All", command=self.select_all)
-            self.context_menu.add_command(label="Paste", command=self.paste_text)
-            self.context_menu.add_command(label="Undo", command=self.undo_input)
-            self.chat_history_context_menu.add_command(label="Copy", command=self.copy_text)
-            self.chat_history_context_menu.add_command(label="Select All", command=self.select_all)
+            self.context_menu.entryconfigure(0, label="Copy")
+            self.context_menu.entryconfigure(1, label="Select All")
+            self.context_menu.entryconfigure(2, label="Paste")
+            self.context_menu.entryconfigure(3, label="Undo")
+            self.chat_history_context_menu.entryconfigure(0, label="Copy")
+            self.chat_history_context_menu.entryconfigure(1, label="Select All")
             self.img_reco_button.configure(text="Recognize text")
             self.search_label.configure(text="Model Search:")
             self.speech_reco_button.configure(text="Voice input")
             self.read_checkbox.configure(text="Read text")
+        else:  # Переключаем на русский
+            self.model_label.configure(text="Выберите модель:")
+            self.category_label.configure(text="Выберите категорию:")
+            self.send_button.configure(text="Отправить")
+            self.clear_button.configure(text="Очистить чат")
+            self.theme_button.configure(text="Светлая тема")
+            self.lang_button.configure(text="English")
+            self.read_file_button.configure(text="Открыть файл")
+            self.history_checkbox.configure(text="Вести историю")
+            self.exit_button.configure(text="Выход")
+            self.context_menu.entryconfigure(0, label="Копировать")
+            self.context_menu.entryconfigure(1, label="Выделить всё")
+            self.context_menu.entryconfigure(2, label="Вставить")
+            self.context_menu.entryconfigure(3, label="Отменить действие")
+            self.chat_history_context_menu.entryconfigure(0, label="Копировать")
+            self.chat_history_context_menu.entryconfigure(1, label="Выделить всё")
+            self.img_reco_button.configure(text="Распознать текст")
+            self.search_label.configure(text="Поиск модели:")
+            self.speech_reco_button.configure(text="Голосовой ввод")
+            self.read_checkbox.configure(text="Прочитать текст")
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
-        self.create_menu()  # Пересоздаем меню после изменения языка
+        if self.winfo_screenheight() < 900:
+            self.create_menu()  # Пересоздаем меню после изменения языка
 
 
 if __name__ == "__main__":
