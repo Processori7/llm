@@ -157,3 +157,4 @@ IMG_FOLDER=My_img
 WRITE_HISTORY=True  
 MODE=light  
 DEFAULT_COLOR_THEM=green  
+ELECTRON_API_KEY=get_your_key_here: https://playground.electronhub.top/console  
