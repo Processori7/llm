@@ -22,8 +22,9 @@ import odf.text
 import odf.opendocument
 import subprocess
 
-from webscout import KOBOLDAI, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, DeepSeek, BLACKBOXAI, HuggingFaceChat, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout.Provider.AISEARCH import Isou
+from webscout.Provider.TTI.aiarta import AIArtaImager
 from datetime import datetime
 from tkinter import messagebox, filedialog, PhotoImage
 from PIL import Image
@@ -177,6 +178,15 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
+def communicate_with_AiArta(user_input, model):
+    provider = AIArtaImager()
+    try:
+        images = provider.generate(user_input, model=model, amount=1)
+        paths = provider.save(images, dir=img_folder)
+        return paths
+    except Exception as e:
+        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
 def get_Polinations_img_models():
     model_functions = {}
     try:
@@ -218,6 +228,39 @@ def get_Polinations_chat_models():
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
 
+def get_ElectronHub_credits():
+    url = "https://api.electronhub.top/user/me"
+
+    headers = {
+        "accept": "*/*",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ru-RU,ru;q=0.8",
+        "authorization": "Bearer ek-wzXf1DtIewOj0VnwFxYkIuz1gvvcxeSjosfJoiomIjtJyI1Qc2",
+        "cache-control": "no-cache",
+        "dnt": "1",
+        "origin": "https://playground.electronhub.top",
+        "pragma": "no-cache",
+        "referer": "https://playground.electronhub.top/",
+        "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": '"Android"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site",
+        "sec-gpc": "1",
+        "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Mobile Safari/537.36"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.ok:
+        try:
+            data = response.json()
+            credits = data.get("credits")
+            return int(credits)
+        except Exception as e:
+            return f"{get_error_message(app.isTranslate)}: {str(e)}"
+
 def communicate_with_ElectronHub(user_input, model):
     try:
         ai = ElectronHub(api_key=electron_api_key_val)
@@ -227,6 +270,8 @@ def communicate_with_ElectronHub(user_input, model):
         full_response = ""
         for chunk in response:
             full_response += chunk
+        credits = get_ElectronHub_credits()
+        full_response = full_response + f"\nBalance: {credits}"
         return full_response
     except Exception as e:
         return f"{get_error_message(app.isTranslate)}: {str(e)}"
@@ -508,13 +553,13 @@ model_functions = {
 "qwen-max-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "t2t"),
 "qwen-turbo-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "t2t"),
 "qvq-72b-preview (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "t2t"),
-"qvq-32b-preview (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "t2t"),
+"qvq-32b (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b", "t2t"),
 "qwen-vl-max-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest", "t2t"),
-"qwen-plus-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "search"),
-"qwen-turbo-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "search"),
-"qwen-max-latest_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
-"qvq-72b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
-"qvq-32b-preview_Web (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
+"(Qwenlm) qwen-plus-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "search"),
+"(Qwenlm) qwen-turbo-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "search"),
+"(Qwenlm) qwen-max-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
+"(Qwenlm) qvq-72b-preview_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
+"(Qwenlm) qvq-32b-preview_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
 "deepseek-v3 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-v3"),
 "deepseek-r1 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-r1"),
 "deepseek-llm-67b-chat (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-llm-67b-chat"),
@@ -739,8 +784,6 @@ model_functions = {
 "hermes-3-llama-3.1-405b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hermes-3-llama-3.1-405b"),
 "hermes-2-pro-llama-3-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hermes-2-pro-llama-3-8b"),
 "nous-hermes-2-mixtral-8x7b-dpo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "nous-hermes-2-mixtral-8x7b-dpo"),
-
-# Chinese models
 "doubao-lite-4k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-lite-4k"),
 "doubao-lite-32k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-lite-32k"),
 "doubao-pro-4k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-pro-4k"),
@@ -866,12 +909,12 @@ model_functions = {
 "Llama 3.3 70B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.3 70B"),
 "claude 3.5 haiku (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "claude 3.5 haiku"),
 "claude 3.5 sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "claude 3.5 sonnet"),
-"llama-3.3-70b_Web (Venice)": lambda user_input: communicate_with_Venice(user_input, "llama-3.3-70b"),
-"llama-3.2-3b-akash_Web (Venice)": lambda user_input: communicate_with_Venice(user_input, "llama-3.2-3b-akash"),
-"qwen2dot5-coder-32b_Web (Venice)": lambda user_input: communicate_with_Venice(user_input, "qwen2dot5-coder-32b"),
-"DeepSeek-R1-Distill-Qwen-32B_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
-"Qwen2.5-72B-Instruct-128K_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
-"Deepseek-reasoner_Web (Isou)":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
+"(Venice) llama-3.3-70b_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.3-70b"),
+"(Venice) llama-3.2-3b-akash_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.2-3b-akash"),
+"(Venice) qwen2dot5-coder-32b_Web": lambda user_input: communicate_with_Venice(user_input, "qwen2dot5-coder-32b"),
+"(Isou) DeepSeek-R1-Distill-Qwen-32B_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
+"(Isou) Qwen2.5-72B-Instruct-128K_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
+"(Isou) Deepseek-reasoner_Web":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
 "KoboldAI": communicate_with_KoboldAI,
 "Phind": communicate_with_Phind,
 "Felo_Web": communicate_with_Felo,
@@ -881,6 +924,53 @@ model_functions = {
 "Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
 "MiniCPM-Llama3-V-2_5(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "openbmb/MiniCPM-Llama3-V-2_5"),
 "Llava-1.5-7b-hf(Photo Analyze)(VLM)":lambda user_input: communicate_with_VLM(user_input, "llava-hf/llava-1.5-7b-hf"),
+"AiArta_flux_img": lambda user_input: communicate_with_AiArta(user_input, "Flux"),
+    "AiArta_medieval_img": lambda user_input: communicate_with_AiArta(user_input, "Medieval"),
+    "AiArta_vincent_van_gogh_img": lambda user_input: communicate_with_AiArta(user_input, "Vincent Van Gogh"),
+    "AiArta_f_dev_img": lambda user_input: communicate_with_AiArta(user_input, "F Dev"),
+    "AiArta_low_poly_img": lambda user_input: communicate_with_AiArta(user_input, "Low Poly"),
+    "AiArta_dreamshaper_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Dreamshaper-xl"),
+    "AiArta_anima_pencil_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Anima-pencil-xl"),
+    "AiArta_biomech_img": lambda user_input: communicate_with_AiArta(user_input, "Biomech"),
+    "AiArta_trash_polka_img": lambda user_input: communicate_with_AiArta(user_input, "Trash Polka"),
+    "AiArta_no_style_img": lambda user_input: communicate_with_AiArta(user_input, "No Style"),
+    "AiArta_cheyenne_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Cheyenne-xl"),
+    "AiArta_chicano_img": lambda user_input: communicate_with_AiArta(user_input, "Chicano"),
+    "AiArta_embroidery_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Embroidery tattoo"),
+    "AiArta_red_and_black_img": lambda user_input: communicate_with_AiArta(user_input, "Red and Black"),
+    "AiArta_fantasy_art_img": lambda user_input: communicate_with_AiArta(user_input, "Fantasy Art"),
+    "AiArta_watercolor_img": lambda user_input: communicate_with_AiArta(user_input, "Watercolor"),
+    "AiArta_dotwork_img": lambda user_input: communicate_with_AiArta(user_input, "Dotwork"),
+    "AiArta_old_school_colored_img": lambda user_input: communicate_with_AiArta(user_input, "Old school colored"),
+    "AiArta_realistic_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Realistic tattoo"),
+    "AiArta_japanese_2_img": lambda user_input: communicate_with_AiArta(user_input, "Japanese_2"),
+    "AiArta_realistic_stock_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Realistic-stock-xl"),
+    "AiArta_f_pro_img": lambda user_input: communicate_with_AiArta(user_input, "F Pro"),
+    "AiArta_revanimated_img": lambda user_input: communicate_with_AiArta(user_input, "RevAnimated"),
+    "AiArta_katayama_mix_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Katayama-mix-xl"),
+    "AiArta_sdxl_l_img": lambda user_input: communicate_with_AiArta(user_input, "SDXL L"),
+    "AiArta_cor_epica_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Cor-epica-xl"),
+    "AiArta_anime_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Anime tattoo"),
+    "AiArta_new_school_img": lambda user_input: communicate_with_AiArta(user_input, "New School"),
+    "AiArta_death_metal_img": lambda user_input: communicate_with_AiArta(user_input, "Death metal"),
+    "AiArta_old_school_img": lambda user_input: communicate_with_AiArta(user_input, "Old School"),
+    "AiArta_juggernaut_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Juggernaut-xl"),
+    "AiArta_photographic_img": lambda user_input: communicate_with_AiArta(user_input, "Photographic"),
+    "AiArta_sdxl_1_0_img": lambda user_input: communicate_with_AiArta(user_input, "SDXL 1.0"),
+    "AiArta_graffiti_img": lambda user_input: communicate_with_AiArta(user_input, "Graffiti"),
+    "AiArta_mini_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Mini tattoo"),
+    "AiArta_surrealism_img": lambda user_input: communicate_with_AiArta(user_input, "Surrealism"),
+    "AiArta_neo_traditional_img": lambda user_input: communicate_with_AiArta(user_input, "Neo-traditional"),
+    "AiArta_on_limbs_black_img": lambda user_input: communicate_with_AiArta(user_input, "On limbs black"),
+    "AiArta_yamers_realistic_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Yamers-realistic-xl"),
+    "AiArta_pony_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Pony-xl"),
+    "AiArta_playground_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Playground-xl"),
+    "AiArta_anything_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Anything-xl"),
+    "AiArta_flame_design_img": lambda user_input: communicate_with_AiArta(user_input, "Flame design"),
+    "AiArta_kawaii_img": lambda user_input: communicate_with_AiArta(user_input, "Kawaii"),
+    "AiArta_cinematic_art_img": lambda user_input: communicate_with_AiArta(user_input, "Cinematic Art"),
+    "AiArta_professional_img": lambda user_input: communicate_with_AiArta(user_input, "Professional"),
+    "AiArta_flux_black_ink_img": lambda user_input: communicate_with_AiArta(user_input, "Flux Black Ink")
 }
 
 talk_please = {
@@ -1066,8 +1156,10 @@ class ChatApp(ctk.CTk):
             self.tray_icon = None
             self.tray_icon_thread = None  # Добавляем явную инициализацию
             self.local_ip = self.get_local_ip()
-
-            self.title("AI Chat")
+            if self.isTranslate:
+                self.title("AI Chat")
+            else:
+                self.title("Чат с ИИ")
             self.geometry("{}x{}+0+0".format(self.winfo_screenwidth(), self.winfo_screenheight()))
             if font_size_val is not None:
                 font_size = int(font_size_val)
@@ -1140,16 +1232,21 @@ class ChatApp(ctk.CTk):
             self.category_label = ctk.CTkLabel(self.category_frame, text="Выберите категорию:", font=("Consolas", font_size))
             self.category_label.pack(side="left", padx=6)
 
+            self.values=[]
+            if self.isTranslate:
+                self.values = ["All", "Text", "Img", "Photo Analyze", "Web"]
+            else:
+                self.values = ["Все", "Текст", "Фото", "Анализ фото", "Поиск в Интернете"]
             # Комбобокс для выбора категории моделей
             self.category_var = tk.StringVar()
             self.category_combobox = ctk.CTkOptionMenu(self.category_frame, variable=self.category_var,
                                                        font=("Consolas", font_size),
-                                                       values=["All", "Text", "Img", "Photo Analyze", "Web"],
+                                                       values=self.values,
                                                        command=self.update_model_list)
             self.category_combobox.pack(side="left", padx=6)
 
             # Установка "All" как модели по умолчанию
-            self.category_combobox.set("All")
+            self.category_combobox.set(self.values[0])
 
             self.search_label = ctk.CTkLabel(self.category_frame, text="Поиск модели:", font=("Consolas", font_size))
             self.search_label.pack(side="left", padx=6)
@@ -1183,7 +1280,7 @@ class ChatApp(ctk.CTk):
             self.search_var.trace("w", lambda *args: self.after(300, self.filter_models))
 
             # Обновление списка моделей при инициализации
-            self.update_model_list("All")
+            self.update_model_list(self.values[0])
 
             self.input_entry = ctk.CTkTextbox(self.input_frame, font=("Consolas", font_size), height=200, width=180, wrap="word", text_color="orange")
             self.input_entry.edit_undo()
@@ -1633,15 +1730,15 @@ class ChatApp(ctk.CTk):
         # Фильтрация моделей в зависимости от выбранной категории
         filtered_models = []
         for model in model_functions.keys():
-            if category == "All":
+            if category == self.values[0]:
                 filtered_models.append(model)
-            elif category == "Text" and not model.endswith("_img"):
+            elif category == self.values[1] and not model.endswith("_img"):
                 filtered_models.append(model)
-            elif category == "Img" and model.endswith("_img"):
+            elif category == self.values[2] and model.endswith("_img"):
                 filtered_models.append(model)
-            elif category == "Photo Analyze" and "(Photo Analyze)" in model:
+            elif category ==self.values[3] and "(Photo Analyze)" in model:
                 filtered_models.append(model)
-            elif category == "Web" and "_Web" in model:
+            elif category == self.values[4] and "_Web" in model:
                 filtered_models.append(model)
 
         # Сохраняем текущее значение комбобокса
@@ -1666,7 +1763,7 @@ class ChatApp(ctk.CTk):
 
     def create_tray_icon(self):
         """Создает новый экземпляр иконки трея"""
-        if not self.isTranslate:
+        if self.isTranslate:
 
             menu = (
                 pystray.MenuItem("Открыть", self.show_window, default=True),
@@ -1938,6 +2035,8 @@ class ChatApp(ctk.CTk):
 
     def toggle_lang(self):
         if self.isTranslate:  # Переключаем на английский
+            self.values = ["All", "Text", "Img", "Photo Analyze", "Web"]
+            self.title("AI Chat")
             self.model_label.configure(text="Select model:")
             self.category_label.configure(text="Select category:")
             self.send_button.configure(text="Send")
@@ -1958,6 +2057,8 @@ class ChatApp(ctk.CTk):
             self.speech_reco_button.configure(text="Voice input")
             self.read_checkbox.configure(text="Read text")
         else:  # Переключаем на русский
+            self.values = ["Все", "Текст", "Фото", "Анализ фото", "Поиск в Интернете"]
+            self.title("Чат с ИИ")
             self.model_label.configure(text="Выберите модель:")
             self.category_label.configure(text="Выберите категорию:")
             self.send_button.configure(text="Отправить")
@@ -1977,10 +2078,18 @@ class ChatApp(ctk.CTk):
             self.search_label.configure(text="Поиск модели:")
             self.speech_reco_button.configure(text="Голосовой ввод")
             self.read_checkbox.configure(text="Прочитать текст")
+        # Обновляем список значений в комбобоксе:
+        self.category_combobox.configure(values=self.values)
+        # Устанавливаем значение по умолчанию.
+        self.category_combobox.set(self.values[0])
 
         self.isTranslate = not self.isTranslate  # Переключаем состояние
+
         if self.winfo_screenheight() < 900:
             self.create_menu()  # Пересоздаем меню после изменения языка
+        if self.tray_icon is not None:
+            self.tray_icon.stop()  # останавливаем старую иконку
+        self.create_tray_icon()  # создаём новую иконку с обновлённым меню
 
 
 if __name__ == "__main__":
