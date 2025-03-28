@@ -81,7 +81,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.53"
+CURRENT_VERSION = "1.54"
 
 prompt = """###INSTRUCTIONS###
 
