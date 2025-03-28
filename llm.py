@@ -37,6 +37,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from docx import Document
 from dotenv import load_dotenv
+from pyzbar.pyzbar import decode
 
 # Загружаем переменные из .env файла в окружение
 load_dotenv()
@@ -1358,6 +1359,11 @@ class ChatApp(ctk.CTk):
                                                  font=("Consolas", font_size), text_color="white",
                                                  height=button_height)
 
+            self.QR_reco_button = ctk.CTkButton(self.button_frame, text="Прочитать QR Code",
+                                                 command=self.read_qrcode_data,
+                                                 font=("Consolas", font_size), text_color="white",
+                                                 height=button_height)
+
             self.read_file_button = ctk.CTkButton(self.button_frame, text="Открыть файл",
                                                  command=self.read_file,
                                                  font=("Consolas", font_size), text_color="white",
@@ -1367,6 +1373,8 @@ class ChatApp(ctk.CTk):
                 # Дополнительные кнопки для больших экранов
 
                 self.img_reco_button.pack(side="top", padx=5, pady=10)
+
+                self.QR_reco_button.pack(side="top", padx=5, pady=10)
 
                 self.read_file_button.pack(side="top", padx=5, pady=10)
 
@@ -1420,6 +1428,27 @@ class ChatApp(ctk.CTk):
 
             threading.Thread(target=run_tts, daemon=True).start()
 
+    def read_qrcode_data(self):
+        # Открываем диалог выбора изображения
+        image_path = filedialog.askopenfilename(
+            title="Выберите изображение",
+            filetypes=(("Изображения", "*.jpg;*.png;*.jpeg"), ("Все файлы", "*.*"))
+        )
+
+        if not image_path:
+            return
+
+        try:
+            pil_img = Image.open(image_path)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Невозможно открыть изображение: {e}")
+
+        decoded_objects = decode(pil_img)
+        if decoded_objects:
+            data = decoded_objects[0].data.decode('utf-8')
+            self.input_entry.delete("1.0", tk.END)
+            self.input_entry.insert("1.0", data)
+
     def create_menu(self):
         """Создает верхнее меню с поддержкой перевода."""
         menubar = tk.Menu(self)
@@ -1454,6 +1483,7 @@ class ChatApp(ctk.CTk):
         tools_menu = tk.Menu(menubar, tearoff=0)
         if not self.isTranslate:
             tools_menu.add_command(label="Распознать текст", command=self.recognize_text)
+            tools_menu.add_command(label="Прочитать QR Code", command=self.read_qr_code_data)
         else:
             tools_menu.add_command(label="Recognize Text", command=self.recognize_text)
         menubar.add_cascade(label="Инструменты" if not self.isTranslate else "Tools", menu=tools_menu)
@@ -2067,6 +2097,7 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu.entryconfigure(1, label="Select All")
             self.img_reco_button.configure(text="Recognize text")
             self.search_label.configure(text="Model Search:")
+            self.QR_reco_button.configure(text="Read QR Code")
             self.speech_reco_button.configure(text="Voice input")
             self.read_checkbox.configure(text="Read text")
         else:  # Переключаем на русский
@@ -2088,6 +2119,7 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu.entryconfigure(0, label="Копировать")
             self.chat_history_context_menu.entryconfigure(1, label="Выделить всё")
             self.img_reco_button.configure(text="Распознать текст")
+            self.QR_reco_button.configure(text="Прочитать QR Code")
             self.search_label.configure(text="Поиск модели:")
             self.speech_reco_button.configure(text="Голосовой ввод")
             self.read_checkbox.configure(text="Прочитать текст")
