@@ -36,3 +36,4 @@ openpyxl
 odfpy
 antiword
 python-dotenv
+pyzbar

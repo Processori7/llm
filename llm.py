@@ -22,7 +22,7 @@ import odf.text
 import odf.opendocument
 import subprocess
 
-from webscout import KOBOLDAI, DeepSeek, BLACKBOXAI, HuggingFaceChat, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout.Provider.AISEARCH import Isou
 from webscout.Provider.TTI.aiarta import AIArtaImager
 from webscout import FastFluxImager
@@ -81,7 +81,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.54"
+CURRENT_VERSION = "1.55"
 
 prompt = """###INSTRUCTIONS###
 
@@ -895,31 +895,43 @@ model_functions = {
 "gpt-4o-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4o-mini"),
 "deepseek-r1 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-r1"),
 "gemini-2.0-flash-001 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "google/gemini-2.0-flash-001"),
-"mistral-nemo (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "mistral-nemo"),
-"mistral-large (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "mistral-large"),
-"gemini-2.0-flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "gemini-2.0-flash"),
-"gemini-1.5-pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "gemini-1.5-pro"),
-"gemini-1.5-flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "gemini-1.5-flash"),
-"gemini-2.0-pro-exp-02-05 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "gemini-2.0-pro-exp-02-05"),
-"deepseek-r1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "deepseek-r1"),
-"deepseek-v3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "deepseek-v3"),
-"Deepseek r1 14B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek r1 14B"),
-"Deepseek r1 32B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek r1 32B"),
-"o3-mini-high (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "o3-mini-high"),
-"o3-mini-medium (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "o3-mini-medium"),
-"o3-mini-low (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "o3-mini-low"),
-"o3-mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "o3-mini"),
-"GPT-4o-mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT-4o-mini"),
-"o1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "o1"),
-"o1-mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "o1-mini"),
-"GPT-4o (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT-4o"),
-"Qwen coder (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen coder"),
-"Qwen 2.5 72B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen 2.5 72B"),
+"Mistral Nemo (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mistral Nemo"),
+"Mistral Large (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mistral Large"),
+"Mixtral 8x22B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mixtral 8x22B"),
+"Gemini 2.0 Flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.0 Flash"),
+"Gemini 1.5 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 1.5 Pro"),
+"Gemini 1.5 Flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 1.5 Flash"),
+"Gemini 2.0 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.0 Pro"),
+"Gemini 2.5 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.5 Pro"),
+"Deepseek R1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek R1"),
+"Deepseek R1 Fast (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek R1 Fast"),
+"Deepseek V3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek V3"),
+"Deepseek v3 0324 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek v3 0324"),
+"GPT 4o (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o"),
+"GPT 4.5 Preview (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4.5 Preview"),
+"GPT 4o Latest (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o Latest"),
+"GPT 4o mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o mini"),
+"GPT 4o Search Preview (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o Search Preview"),
+"O1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O1"),
+"O1 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O1 Mini"),
+"O3 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 Mini"),
+"O3 Mini High (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 Mini High"),
+"O3 Mini Low (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 Mini Low"),
 "Llama 3.1 405B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.1 405B"),
-"llama3.1-70b-fast (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "llama3.1-70b-fast"),
+"Llama 3.1 70B Fast (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.1 70B Fast"),
 "Llama 3.3 70B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.3 70B"),
-"claude 3.5 haiku (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "claude 3.5 haiku"),
-"claude 3.5 sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "claude 3.5 sonnet"),
+"Llama 3.2 90B Vision (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.2 90B Vision"),
+"Claude 3.5 haiku (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 haiku"),
+"Claude 3.5 sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 sonnet"),
+"Claude 3.7 Sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet"),
+"Claude 3.7 Sonnet (Thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet (Thinking)"),
+"Qwen Max (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Max"),
+"Qwen Plus (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Plus"),
+"Qwen Turbo (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Turbo"),
+"QwQ 32B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "QwQ 32B"),
+"QwQ Plus (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "QwQ Plus"),
+"Grok 2 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 2"),
+"Grok 3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 3"),
 "(Venice) llama-3.3-70b_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.3-70b"),
 "(Venice) llama-3.2-3b-akash_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.2-3b-akash"),
 "(Venice) qwen2dot5-coder-32b_Web": lambda user_input: communicate_with_Venice(user_input, "qwen2dot5-coder-32b"),
@@ -1359,11 +1371,6 @@ class ChatApp(ctk.CTk):
                                                  font=("Consolas", font_size), text_color="white",
                                                  height=button_height)
 
-            self.QR_reco_button = ctk.CTkButton(self.button_frame, text="Прочитать QR Code",
-                                                 command=self.read_qrcode_data,
-                                                 font=("Consolas", font_size), text_color="white",
-                                                 height=button_height)
-
             self.read_file_button = ctk.CTkButton(self.button_frame, text="Открыть файл",
                                                  command=self.read_file,
                                                  font=("Consolas", font_size), text_color="white",
@@ -1373,8 +1380,6 @@ class ChatApp(ctk.CTk):
                 # Дополнительные кнопки для больших экранов
 
                 self.img_reco_button.pack(side="top", padx=5, pady=10)
-
-                self.QR_reco_button.pack(side="top", padx=5, pady=10)
 
                 self.read_file_button.pack(side="top", padx=5, pady=10)
 
@@ -1428,12 +1433,15 @@ class ChatApp(ctk.CTk):
 
             threading.Thread(target=run_tts, daemon=True).start()
 
-    def read_qrcode_data(self):
+    def read_qrcode_data(self, path=None):
         # Открываем диалог выбора изображения
-        image_path = filedialog.askopenfilename(
-            title="Выберите изображение",
-            filetypes=(("Изображения", "*.jpg;*.png;*.jpeg"), ("Все файлы", "*.*"))
-        )
+        if not path:
+            image_path = filedialog.askopenfilename(
+                title="Выберите изображение",
+                filetypes=(("Изображения", "*.jpg;*.png;*.jpeg"), ("Все файлы", "*.*"))
+            )
+        else:
+            image_path = path
 
         if not image_path:
             return
@@ -1446,8 +1454,7 @@ class ChatApp(ctk.CTk):
         decoded_objects = decode(pil_img)
         if decoded_objects:
             data = decoded_objects[0].data.decode('utf-8')
-            self.input_entry.delete("1.0", tk.END)
-            self.input_entry.insert("1.0", data)
+            return data
 
     def create_menu(self):
         """Создает верхнее меню с поддержкой перевода."""
@@ -1483,7 +1490,6 @@ class ChatApp(ctk.CTk):
         tools_menu = tk.Menu(menubar, tearoff=0)
         if not self.isTranslate:
             tools_menu.add_command(label="Распознать текст", command=self.recognize_text)
-            tools_menu.add_command(label="Прочитать QR Code", command=self.read_qr_code_data)
         else:
             tools_menu.add_command(label="Recognize Text", command=self.recognize_text)
         menubar.add_cascade(label="Инструменты" if not self.isTranslate else "Tools", menu=tools_menu)
@@ -1743,7 +1749,11 @@ class ChatApp(ctk.CTk):
                         get_image_load_error_message(app.isTranslate)
                     )
                     return
-
+                code = self.read_qrcode_data(image_path)
+                if code:
+                    self.input_entry.delete("1.0", tk.END)
+                    self.input_entry.insert("1.0", code)
+                    return
                 # Преобразование изображения в оттенки серого
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -2097,7 +2107,6 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu.entryconfigure(1, label="Select All")
             self.img_reco_button.configure(text="Recognize text")
             self.search_label.configure(text="Model Search:")
-            self.QR_reco_button.configure(text="Read QR Code")
             self.speech_reco_button.configure(text="Voice input")
             self.read_checkbox.configure(text="Read text")
         else:  # Переключаем на русский
@@ -2119,7 +2128,6 @@ class ChatApp(ctk.CTk):
             self.chat_history_context_menu.entryconfigure(0, label="Копировать")
             self.chat_history_context_menu.entryconfigure(1, label="Выделить всё")
             self.img_reco_button.configure(text="Распознать текст")
-            self.QR_reco_button.configure(text="Прочитать QR Code")
             self.search_label.configure(text="Поиск модели:")
             self.speech_reco_button.configure(text="Голосовой ввод")
             self.read_checkbox.configure(text="Прочитать текст")
