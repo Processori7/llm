@@ -24,7 +24,7 @@ import odf.opendocument
 import subprocess
 import zstandard as zstd
 
-from webscout import KOBOLDAI, ExaChat, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, Scira, ExaChat, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout.Provider.AISEARCH import Isou
 from webscout.Provider.TTI.aiarta import AIArtaImager
 from webscout import FastFluxImager
@@ -344,6 +344,16 @@ def get_ElectronHub_credits():
             print("Response is not valid JSON:")
             print(response.text)
             return f"Error parsing JSON: {str(e)}"
+
+def communicate_with_Scira(user_input, model):
+    try:
+        ai = Scira()
+        ai.model = model
+        ai.system_prompt = prompt
+        response = ai.search(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_ExaChat(user_input, model):
     try:
@@ -1046,6 +1056,11 @@ model_functions = {
 "(Isou) DeepSeek-R1-Distill-Qwen-32B_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
 "(Isou) Qwen2.5-72B-Instruct-128K_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
 "(Isou) Deepseek-reasoner_Web":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
+"(Scira) Grok3_Web": lambda user_input: communicate_with_Scira(user_input, "scira-default"),
+"(Scira) Grok3-mini_Web": lambda user_input: communicate_with_Scira(user_input, "scira-grok-3-mini"),
+"(Scira) Grok2-Vision_Web": lambda user_input: communicate_with_Scira(user_input, "scira-vision"),
+"(Scira) Sonnet-3.7_Web": lambda user_input: communicate_with_Scira(user_input, "scira-claude"),
+"(Scira) optimus_Web": lambda user_input: communicate_with_Scira(user_input, "scira-optimus"),
 "KoboldAI": communicate_with_KoboldAI,
 "Phind": communicate_with_Phind,
 "Felo_Web": communicate_with_Felo,
