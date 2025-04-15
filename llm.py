@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import pytesseract
@@ -21,8 +22,9 @@ import pandas as pd
 import odf.text
 import odf.opendocument
 import subprocess
+import zstandard as zstd
 
-from webscout import KOBOLDAI, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, ExaChat, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout.Provider.AISEARCH import Isou
 from webscout.Provider.TTI.aiarta import AIArtaImager
 from webscout import FastFluxImager
@@ -38,7 +40,6 @@ from fastapi.responses import HTMLResponse
 from docx import Document
 from dotenv import load_dotenv
 from pyzbar.pyzbar import decode
-
 # Загружаем переменные из .env файла в окружение
 load_dotenv()
 
@@ -81,7 +82,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.55"
+CURRENT_VERSION = "1.56"
 
 prompt = """###INSTRUCTIONS###
 
@@ -180,6 +181,56 @@ def check_for_updates():
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
+
+def test_all_models_and_log(output_file="test_results.txt"):
+    """
+    Тестирует все модели из словаря model_functions и записывает результаты в файл.
+
+    :param output_file: Путь к файлу для записи результатов.
+    """
+    # Открываем файл для записи результатов
+    with open(output_file, "w", encoding="utf-8") as file:
+        # Записываем заголовок
+        header = "-" * 80 + "\n"
+        header += f"{'Model':<50} {'Status':<10} {'Response'}\n"
+        header += "-" * 80 + "\n"
+        file.write(header)
+        print(header, end="")  # Также выводим заголовок в консоль
+
+        # Проходим по каждой модели в словаре model_functions
+        for model_name, model_function in model_functions.items():
+            try:
+                # Вызываем функцию модели с тестовым запросом
+                response = model_function("Say 'Hello' in one word")
+
+                # Обрабатываем ответ
+                if response and isinstance(response, str) and len(response.strip()) > 0:
+                    status = "✓"
+                    display_text = (
+                        response.strip()[:50] + "..."
+                        if len(response.strip()) > 50
+                        else response.strip()
+                    )
+                else:
+                    status = "✗"
+                    display_text = "Empty or invalid response"
+
+                # Формируем строку с результатами
+                result_line = f"{model_name:<50} {status:<10} {display_text}\n"
+                file.write(result_line)
+                print(result_line, end="")  # Выводим результат в консоль
+
+            except Exception as e:
+                # Обрабатываем ошибки и записываем их в файл
+                error_message = f"{model_name:<50} {'✗':<10} {str(e)}\n"
+                file.write(error_message)
+                print(error_message, end="")  # Выводим ошибку в консоль
+
+        # Добавляем разделитель в конце
+        footer = "-" * 80 + "\n"
+        file.write(footer)
+        print(footer, end="")
+
 def communicate_with_FastFluxImager(user_input, model):
     provider = FastFluxImager()
     try:
@@ -187,7 +238,7 @@ def communicate_with_FastFluxImager(user_input, model):
         paths = provider.save(images, dir=img_folder)
         return paths
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_AiArta(user_input, model):
     provider = AIArtaImager()
@@ -196,7 +247,7 @@ def communicate_with_AiArta(user_input, model):
         paths = provider.save(images, dir=img_folder)
         return paths
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def get_Polinations_img_models():
     model_functions = {}
@@ -212,9 +263,9 @@ def get_Polinations_img_models():
                 model_functions[key] = lambda user_input, model_name=name: gen_img(user_input, model_name)
             return model_functions
         else:
-            return f"{get_error_message(app.isTranslate)}: {resp.status_code}"
+            return f"{get_error_message(main_app.isTranslate)}: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 #Получаю все текстовые модели Polinations
 def get_Polinations_chat_models():
@@ -225,28 +276,26 @@ def get_Polinations_chat_models():
             models = resp.json()
             for model in models:
                 # Проверяем, является ли модель текстовой
-                if model.get("baseModel", False):
-                    model_name = model["name"]
-                    model_description = model["description"]
-                    # Формируем ключ для словаря
-                    key = f"{model_description} (Polination)"
-                    # Добавляем в словарь с соответствующей лямбда-функцией
-                    model_functions[key] = lambda user_input, model_name=model: communicate_with_Pollinations_chat(
-                        user_input, model_name)
+                model_description = model["description"]
+                # Формируем ключ для словаря
+                key = f"{model_description} (Polination)"
+                # Добавляем в словарь с соответствующей лямбда-функцией
+                model_functions[key] = lambda user_input, model_name=model: communicate_with_Pollinations_chat(
+                    user_input, model_name)
             return model_functions
         else:
-            return f"{get_error_message(app.isTranslate)}: {resp.status_code}"
+            return f"{get_error_message(main_app.isTranslate)}: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+
 
 def get_ElectronHub_credits():
     url = "https://api.electronhub.top/user/me"
-
     headers = {
         "accept": "*/*",
         "accept-encoding": "gzip, deflate, br, zstd",
         "accept-language": "ru-RU,ru;q=0.8",
-        "authorization": "Bearer ek-wzXf1DtIewOj0VnwFxYkIuz1gvvcxeSjosfJoiomIjtJyI1Qc2",
+        "authorization": "Bearer " + electron_api_key_val,
         "cache-control": "no-cache",
         "dnt": "1",
         "origin": "https://playground.electronhub.top",
@@ -254,23 +303,57 @@ def get_ElectronHub_credits():
         "referer": "https://playground.electronhub.top/",
         "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
         "sec-ch-ua-mobile": "?1",
-        "sec-ch-ua-platform": '"Android"',
+        "sec-ch-ua-platform": '"Windows"',
         "sec-fetch-dest": "empty",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
         "sec-gpc": "1",
-        "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Mobile Safari/537.36"
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
     }
 
     response = requests.get(url, headers=headers)
 
-    if response.ok:
+    # Проверка Content-Encoding
+    if response.headers.get("Content-Encoding") == "zstd":
         try:
-            data = response.json()
+            # Используем потоковый декодер для zstd
+            dctx = zstd.ZstdDecompressor()
+            with dctx.stream_reader(response.content) as reader:
+                decompressed_data = reader.read().decode("utf-8")
+
+            # Попытка преобразовать данные в JSON
+            data = json.loads(decompressed_data)
+            # print(data)
             credits = data.get("credits")
             return int(credits)
-        except Exception as e:
-            return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        except zstd.ZstdError as e:
+            print("Zstd decompression error:", str(e))
+            return f"Zstd decompression error: {str(e)}"
+        except ValueError as e:
+            print("Failed to parse JSON after decompression:")
+            print(decompressed_data)
+            return f"Error parsing JSON: {str(e)}"
+    else:
+        # Обработка обычного JSON
+        try:
+            data = response.json()
+            print(data)
+            credits = data.get("credits")
+            return int(credits)
+        except ValueError as e:
+            print("Response is not valid JSON:")
+            print(response.text)
+            return f"Error parsing JSON: {str(e)}"
+
+def communicate_with_ExaChat(user_input, model):
+    try:
+        ai = ExaChat()
+        ai.model = model
+        ai.system_prompt = prompt
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_ElectronHub(user_input, model):
     try:
@@ -285,7 +368,7 @@ def communicate_with_ElectronHub(user_input, model):
         full_response = full_response + f"\nBalance: {credits}"
         return full_response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_PerplexityLabs(user_input, model):
     try:
@@ -295,7 +378,7 @@ def communicate_with_PerplexityLabs(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_JadveOpenAI(user_input, model):
     try:
@@ -305,7 +388,7 @@ def communicate_with_JadveOpenAI(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_WiseCat(user_input, model):
     try:
@@ -315,7 +398,7 @@ def communicate_with_WiseCat(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_AllenAI(user_input, model):
     try:
@@ -325,7 +408,7 @@ def communicate_with_AllenAI(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_HeckAI(user_input, model):
     try:
@@ -336,7 +419,7 @@ def communicate_with_HeckAI(user_input, model):
         response = ai.fix_encoding(response)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Venice(user_input, model):
     try:
@@ -346,7 +429,7 @@ def communicate_with_Venice(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Pollinations_chat(user_input, model):
     try:
@@ -355,20 +438,20 @@ def communicate_with_Pollinations_chat(user_input, model):
         if resp.ok:
             return resp.text
         else:
-            return f"{get_error_message(app.isTranslate)}: {resp.status_code}"
+            return f"{get_error_message(main_app.isTranslate)}: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_FreeAIChat(user_input, model):
+    print(f"Model received: {model}")  # Для отладки
     try:
-        ai = FreeAIChat()
-        ai.model = model
+        ai = FreeAIChat(model=model)
         ai.system_prompt = prompt
         response = ai.chat(user_input, stream=False)
         response = ai.fix_encoding(response)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_ISou(user_input, model):
     try:
@@ -386,10 +469,10 @@ def communicate_with_ISou(user_input, model):
         unique_links = list(set(all_links))
 
         all_text = re.sub(r'\s+', ' ', all_text).strip()
-        final_text = ai.replace_links_with_numbers(all_text, unique_links)
+        final_text = ai.format_response(all_text, unique_links)
         return final_text
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_DeepSeek(user_input, model):
     try:
@@ -399,18 +482,18 @@ def communicate_with_DeepSeek(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
     try:
-        ai = QwenLM(cookies_path=resource_path("cookies.json"), logging=False)
+        ai = QwenLM(cookies_path=resource_path("cookies.json"))
         ai.chat_type=chat_type
         ai.model = model
         ai.system_prompt = prompt
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Netwrck(user_input, model):
     try:
@@ -423,7 +506,7 @@ def communicate_with_Netwrck(user_input, model):
 
         return full_response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_TurboSeek(user_input):
     try:
@@ -436,7 +519,7 @@ def communicate_with_TurboSeek(user_input):
 
         return full_response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Marcus(user_input):
     try:
@@ -444,15 +527,15 @@ def communicate_with_Marcus(user_input):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Felo(user_input):
     try:
         ai = Felo()
-        response = ai.chat(user_input)
+        response = ai.search(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_YouChat(user_input, model):
     try:
@@ -461,14 +544,14 @@ def communicate_with_YouChat(user_input, model):
         response = ai.chat(user_input)
         return response.replace('####', '').replace('**', '')
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_DuckDuckGO(user_input, model):
     try:
-        response = w().chat(user_input, model=model)  # GPT-4.o mini, mixtral-8x7b, llama-3-70b, claude-3-haiku
+        response = w().chat(user_input, model=model)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_KoboldAI(user_input):
     try:
@@ -476,7 +559,7 @@ def communicate_with_KoboldAI(user_input):
         response = koboldai.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_BlackboxAI(user_input, model):
     try:
@@ -495,7 +578,7 @@ def communicate_with_BlackboxAI(user_input, model):
         response = ai.chat(user_input)
         return response.replace("$@$v=undefined-rv1$@$", "")
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Phind(user_input):
     try:
@@ -503,7 +586,7 @@ def communicate_with_Phind(user_input):
         response = ph.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 model_functions = {
 "GPT-O3-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "o3-mini"),
@@ -571,6 +654,31 @@ model_functions = {
 "(Qwenlm) qwen-max-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
 "(Qwenlm) qvq-72b-preview_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
 "(Qwenlm) qvq-32b-preview_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
+"exaanswer (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "exaanswer"),
+"gemini-2.0-flash (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemini-2.0-flash"),
+"gemini-2.0-flash-thinking-exp-01-21 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-flash-thinking-exp-01-21"),
+"gemini-2.5-pro-exp-03-25 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.5-pro-exp-03-25"),
+"gemini-2.0-pro-exp-02-05 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-pro-exp-02-05"),
+"mistralai/mistral-small-3.1-24b-instruct:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"mistralai/mistral-small-3.1-24b-instruct:free"),
+"deepseek/deepseek-r1:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek/deepseek-r1:free"),
+"deepseek/deepseek-chat-v3-0324:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek/deepseek-chat-v3-0324:free"),
+"google/gemma-3-27b-it:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"google/gemma-3-27b-it:free"),
+"deepseek-r1-distill-llama-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek-r1-distill-llama-70b"),
+"deepseek-r1-distill-qwen-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek-r1-distill-qwen-32b"),
+"gemma2-9b-it (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemma2-9b-it"),
+"llama-3.1-8b-instant (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.1-8b-instant"),
+"llama-3.2-1b-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.2-1b-preview"),
+"llama-3.2-3b-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.2-3b-preview"),
+"llama-3.2-90b-vision-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"llama-3.2-90b-vision-preview"),
+"llama-3.3-70b-specdec (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b-specdec"),
+"llama-3.3-70b-versatile (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"llama-3.3-70b-versatile"),
+"llama3-70b-8192 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3-70b-8192"),
+"llama3-8b-8192 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3-8b-8192"),
+"qwen-2.5-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-2.5-32b"),
+"qwen-2.5-coder-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-2.5-coder-32b"),
+"qwen-qwq-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-qwq-32b"),
+"llama3.1-8b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3.1-8b"),
+"llama-3.3-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b"),
 "deepseek-v3 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-v3"),
 "deepseek-r1 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-r1"),
 "deepseek-llm-67b-chat (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-llm-67b-chat"),
@@ -876,20 +984,17 @@ model_functions = {
 "sonar (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar"),
 "sonar-reasoning-pro (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar-reasoning-pro"),
 "sonar-reasoning (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar-reasoning"),
-"gpt-4o (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "gpt-4o"),
 "gpt-4o-mini (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "gpt-4o-mini"),
-"claude-3-7-sonnet-20250219 (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "claude-3-7-sonnet-20250219"),
-"claude-3-5-sonnet-20240620 (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "claude-3-5-sonnet-20240620"),
-"o1-mini (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "o1-mini"),
-"deepseek-chat (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "deepseek-chat"),
-"claude-3-5-haiku-20241022 (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "claude-3-5-haiku-20241022"),
 "chat-model-small (WiseCat)": lambda user_input: communicate_with_WiseCat(user_input, "chat-model-small"),
 "chat-model-large (WiseCat)": lambda user_input: communicate_with_WiseCat(user_input, "chat-model-large"),
 "chat-model-reasoning (WiseCat)": lambda user_input: communicate_with_WiseCat(user_input, "chat-model-reasoning"),
 "tulu3-405b (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "tulu3-405b"),
 "OLMo-2-1124-13B-Instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "OLMo-2-1124-13B-Instruct"),
-"tulu-3-1-8b (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "tulu-3-1-8b"),
+"Llama-3-1-Tulu-3-8B (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "Llama-3-1-Tulu-3-8B"),
 "Llama-3-1-Tulu-3-70B (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "Llama-3-1-Tulu-3-70B"),
+"olmo-2-0325-32b-instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "olmo-2-0325-32b-instruct"),
+"OLMoE-1B-7B-0924-Instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "OLMoE-1B-7B-0924-Instruct"),
+"tulu-3-1-8b (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "tulu-3-1-8b"),
 "olmoe-0125 (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "olmoe-0125"),
 "deepseek-chat (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-chat"),
 "gpt-4o-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4o-mini"),
@@ -922,7 +1027,7 @@ model_functions = {
 "Llama 3.3 70B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.3 70B"),
 "Llama 3.2 90B Vision (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.2 90B Vision"),
 "Claude 3.5 haiku (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 haiku"),
-"Claude 3.5 sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 sonnet"),
+"Claude 3.5 sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 sonnet"),  # Исправлено
 "Claude 3.7 Sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet"),
 "Claude 3.7 Sonnet (Thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet (Thinking)"),
 "Qwen Max (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Max"),
@@ -932,9 +1037,12 @@ model_functions = {
 "QwQ Plus (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "QwQ Plus"),
 "Grok 2 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 2"),
 "Grok 3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 3"),
-"(Venice) llama-3.3-70b_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.3-70b"),
+"Llama 4 Scout (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 4 Scout"),
+"Llama 4 Maverick (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 4 Maverick"),
+"(Venice) Mistral-31-24b": lambda user_input: communicate_with_Venice(user_input, "mistral-31-24b"),
 "(Venice) llama-3.2-3b-akash_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.2-3b-akash"),
 "(Venice) qwen2dot5-coder-32b_Web": lambda user_input: communicate_with_Venice(user_input, "qwen2dot5-coder-32b"),
+"(Venice) deepseek-coder-v2-lite": lambda user_input: communicate_with_Venice(user_input, "deepseek-coder-v2-lite"),
 "(Isou) DeepSeek-R1-Distill-Qwen-32B_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
 "(Isou) Qwen2.5-72B-Instruct-128K_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
 "(Isou) Deepseek-reasoner_Web":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
@@ -1114,7 +1222,7 @@ def communicate_with_VLM(user_input, model):
             response = vlm_instance.chat(prompt)
             return response
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def gen_img(user_input, model):
     try:
@@ -1135,11 +1243,11 @@ def gen_img(user_input, model):
                 img_file.write(resp.content)  # Сохраняем содержимое ответа как изображение
                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
 
-            return f"{get_save_img_messages(app.isTranslate)}{', '.join(saved_images)}"
+            return f"{get_save_img_messages(main_app.isTranslate)}{', '.join(saved_images)}"
         else:
-            return f"{get_error_gen_img_messages(app.isTranslate)}: {resp.status_code}"
+            return f"{get_error_gen_img_messages(main_app.isTranslate)}: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def get_bool_val(val):
     if val in ["True", "true"]:
@@ -1151,6 +1259,7 @@ class ChatApp(ctk.CTk):
     def __init__(self):
         try:
             super().__init__()
+
             if mode_val is not None:
                 ctk.set_appearance_mode(mode_val)
             else:
@@ -1583,51 +1692,6 @@ class ChatApp(ctk.CTk):
 
     def start_api_mode(self):
         def run_fastapi_app():
-            app = FastAPI()
-
-            # Разрешаем CORS для всех источников (можно ограничить по необходимости)
-            app.add_middleware(
-                CORSMiddleware,
-                allow_origins=["*"],  # Для тестирования
-                allow_credentials=True,
-                allow_methods=["*"],
-                allow_headers=["*"],
-            )
-
-            # Модель данных для запроса к /api/gpt/ans
-            class MessageRequest(BaseModel):
-                model: str
-                message: str
-
-            # Определение маршрута для получения списка моделей
-            @app.get("/api/ai/models")
-            def get_models():
-                filtered_models = [model for model in model_functions.keys() if
-                                   "_img" not in model and "(Photo Analyze)" not in model]
-                return {"models": filtered_models}
-
-            # Определение маршрута для получения ответа от модели
-            @app.post("/api/gpt/ans")
-            def get_answer(request: MessageRequest):
-                model = request.model
-                message = request.message
-
-                if model not in model_functions:
-                    raise HTTPException(status_code=404, detail="Model not found")
-
-                response = model_functions[model](message)
-                return {"response": response}
-
-            # Статические файлы
-            static_dir = resource_path("static")
-            app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-            # Главная страница чата
-            @app.get("/chat")
-            def read_chat():
-                html_path = resource_path(os.path.join("static", "chat.html"))
-                with open(html_path, "r", encoding="utf-8") as file:
-                    return HTMLResponse(content=file.read())
 
             sys.stdout = open('server_log.txt', 'w')
             sys.stderr = sys.stdout
@@ -1745,8 +1809,8 @@ class ChatApp(ctk.CTk):
                 image = cv2.imread(image_path)
                 if image is None:
                     messagebox.showerror(
-                        get_image_title_errors(app.isTranslate),
-                        get_image_load_error_message(app.isTranslate)
+                        get_image_title_errors(main_app.isTranslate),
+                        get_image_load_error_message(main_app.isTranslate)
                     )
                     return
                 code = self.read_qrcode_data(image_path)
@@ -1767,15 +1831,15 @@ class ChatApp(ctk.CTk):
                     self.input_entry.delete("1.0", tk.END)
                     self.input_entry.insert("1.0", recognized_text)
                 else:
-                    messagebox.showinfo("Result", get_no_text_recognized_message(app.isTranslate))
+                    messagebox.showinfo("Result", get_no_text_recognized_message(main_app.isTranslate))
             else:
                 messagebox.showerror(
-                    get_image_title_errors(app.isTranslate),
-                    get_select_image_message_errors(app.isTranslate)
+                    get_image_title_errors(main_app.isTranslate),
+                    get_select_image_message_errors(main_app.isTranslate)
                 )
         except Exception as e:
             # Получаем информацию об ошибке
-            error_message = f"{get_text_recognition_error_message(app.isTranslate)}\n{str(e)}\n\n"
+            error_message = f"{get_text_recognition_error_message(main_app.isTranslate)}\n{str(e)}\n\n"
             error_message += traceback.format_exc()
             messagebox.showerror("Error", error_message)
 
@@ -2144,8 +2208,64 @@ class ChatApp(ctk.CTk):
             self.tray_icon.stop()  # останавливаем старую иконку
         self.create_tray_icon()  # создаём новую иконку с обновлённым меню
 
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Для тестирования
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Модель данных для запроса к /api/gpt/ans
+class MessageRequest(BaseModel):
+    model: str
+    message: str
+
+
+# Определение маршрута для получения списка моделей
+@app.get("/api/ai/models")
+def get_models():
+    filtered_models = [model for model in model_functions.keys() if
+                       "_img" not in model and "(Photo Analyze)" not in model]
+    return {"models": filtered_models}
+
+
+# Определение маршрута для получения ответа от модели
+@app.post("/api/gpt/ans")
+def get_answer(request: MessageRequest):
+    model = request.model
+    message = request.message
+
+    if model not in model_functions:
+        raise HTTPException(status_code=404, detail="Model not found")
+
+    response = model_functions[model](message)
+    return {"response": response}
+
+# Получаем абсолютный путь к директории проекта
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Путь к статическим файлам
+static_dir = os.path.join(BASE_DIR, "static")
+
+# Монтируем статические файлы
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+# Главная страница чата
+@app.get("/chat")
+def read_chat():
+    html_path = resource_path(os.path.join("static", "chat.html"))
+    with open(html_path, "r", encoding="utf-8") as file:
+        return HTMLResponse(content=file.read())
+
+main_app = ChatApp()
 
 if __name__ == "__main__":
+    # test_all_models_and_log()
     check_for_updates()
     # Получаем текстовые модели
     chat_model_functions = get_Polinations_chat_models()
@@ -2154,5 +2274,4 @@ if __name__ == "__main__":
     # Объединяем словари
     model_functions.update(chat_model_functions)
     model_functions.update(img_model_functions)
-    app = ChatApp()
-    app.mainloop()
+    main_app.mainloop()

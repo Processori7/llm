@@ -1,4 +1,4 @@
-playsound==1.2.2
+playsound
 webscout
 pillow
 ollama
@@ -37,3 +37,7 @@ odfpy
 antiword
 python-dotenv
 pyzbar
+pytest
+pytest-asyncio
+httpx
+zstandard
