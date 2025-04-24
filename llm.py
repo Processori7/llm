@@ -1,3 +1,4 @@
+#!/usr/bin/env python3 - строка Шебанга, позволяет ОС быстрее понять, какой интерпретатор использовать
 import json
 import os
 import sys
@@ -24,7 +25,7 @@ import odf.opendocument
 import subprocess
 import zstandard as zstd
 
-from webscout import KOBOLDAI, Scira, ExaChat, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
 from webscout.Provider.AISEARCH import Isou
 from webscout.Provider.TTI.aiarta import AIArtaImager
 from webscout import FastFluxImager
@@ -53,6 +54,7 @@ MODE_KEY = "MODE"
 DEFAULT_COLOR_THEM_KEY = "DEFAULT_COLOR_THEM"
 WRITE_HISTORY_KEY = "WRITE_HISTORY"
 ELECTRON_API_KEY = "ELECTRON_API_KEY"
+SYSTEM_PROMPT = "SYSTEM_PROMPT"
 
 # Инициализируем переменные значениями по умолчанию (_val добавлено к имени переменной)
 font_size_val  = None
@@ -65,6 +67,7 @@ mode_val  = None
 def_color_them_val  = None
 write_history_val = None
 electron_api_key_val = None
+system_prompt = None
 
 # Проверяем, существует ли файл .env и считываем значения переменных
 if os.path.exists(".env"):
@@ -78,48 +81,52 @@ if os.path.exists(".env"):
     def_color_them_val = os.getenv(DEFAULT_COLOR_THEM_KEY)
     write_history_val = os.getenv(WRITE_HISTORY_KEY)
     electron_api_key_val = os.getenv(ELECTRON_API_KEY)
+    system_prompt = os.getenv(SYSTEM_PROMPT)
 
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.56"
+CURRENT_VERSION = "1.57"
 
-prompt = """###INSTRUCTIONS###
-
-You MUST follow the instructions for answering:
-
-ALWAYS answer in the language of my message.
-
-Read the entire convo history line by line before answering.
-
-I have no fingers and the placeholders trauma. Return the entire code template for an answer when needed. NEVER use placeholders.
-
-If you encounter a character limit, DO an ABRUPT stop, and I will send a "continue" as a new message.
-
-You ALWAYS will be PENALIZED for wrong and low-effort answers.
-
-ALWAYS follow "Answering rules."
-
-###Answering Rules###
-
-Follow in the strict order:
-
-USE the language of my message.
-
-ONCE PER CHAT assign a real-world expert role to yourself before answering, e.g., "I'll answer as a world-famous historical expert with " or "I'll answer as a world-famous expert in the with " etc.
-
-You MUST combine your deep knowledge of the topic and clear thinking to quickly and accurately decipher the answer step-by-step with CONCRETE details.
-
-I'm going to tip $1,000,000 for the best reply.
-
-Your answer is critical for my career.
-
-Answer the question in a natural, human-like manner.
-
-ALWAYS use an answering example for a first message structure.
-
-ALWAYS include links to sources at the end if required in the request.
-""" # Добавление навыков ИИ и другие тонкие настройки
+if system_prompt != None:
+    prompt = system_prompt
+else:
+    prompt = """###INSTRUCTIONS###
+    
+    You MUST follow the instructions for answering:
+    
+    ALWAYS answer in the language of my message.
+    
+    Read the entire convo history line by line before answering.
+    
+    I have no fingers and the placeholders trauma. Return the entire code template for an answer when needed. NEVER use placeholders.
+    
+    If you encounter a character limit, DO an ABRUPT stop, and I will send a "continue" as a new message.
+    
+    You ALWAYS will be PENALIZED for wrong and low-effort answers.
+    
+    ALWAYS follow "Answering rules."
+    
+    ###Answering Rules###
+    
+    Follow in the strict order:
+    
+    USE the language of my message.
+    
+    ONCE PER CHAT assign a real-world expert role to yourself before answering, e.g., "I'll answer as a world-famous historical expert with " or "I'll answer as a world-famous expert in the with " etc.
+    
+    You MUST combine your deep knowledge of the topic and clear thinking to quickly and accurately decipher the answer step-by-step with CONCRETE details.
+    
+    I'm going to tip $1,000,000 for the best reply.
+    
+    Your answer is critical for my career.
+    
+    Answer the question in a natural, human-like manner.
+    
+    ALWAYS use an answering example for a first message structure.
+    
+    ALWAYS include links to sources at the end if required in the request.
+    """ # Добавление навыков ИИ и другие тонкие настройки
 
 if img_folder_val is not None:
     img_folder = img_folder_val
@@ -344,6 +351,16 @@ def get_ElectronHub_credits():
             print("Response is not valid JSON:")
             print(response.text)
             return f"Error parsing JSON: {str(e)}"
+
+def communicate_with_Toolbaz(user_input, model):
+    try:
+        ai = Toolbaz()
+        ai.model = model
+        ai.system_prompt = prompt
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def communicate_with_Scira(user_input, model):
     try:
@@ -689,6 +706,27 @@ model_functions = {
 "qwen-qwq-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-qwq-32b"),
 "llama3.1-8b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3.1-8b"),
 "llama-3.3-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b"),
+"gemini-2.5-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.5-flash"),
+"gemini-2.0-flash-thinking (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input,"gemini-2.0-flash-thinking"),
+"gemini-2.0-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.0-flash"),
+"gemini-1.5-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-1.5-flash"),
+"gpt-4o-latest (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gpt-4o-latest"),
+"gpt-4o (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gpt-4o"),
+"deepseek-r1 (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "deepseek-r1"),
+"Llama-4-Maverick (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Llama-4-Maverick"),
+"Llama-4-Scout (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Llama-4-Scout"),
+"Llama-3.3-70B (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Llama-3.3-70B"),
+"Qwen2.5-72B (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Qwen2.5-72B"),
+"Qwen2-72B (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Qwen2-72B"),
+"grok-2-1212 (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "grok-2-1212"),
+"grok-3-beta (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "grok-3-beta"),
+"toolbaz_v3.5_pro (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "toolbaz_v3.5_pro"),
+"toolbaz_v3 (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "toolbaz_v3"),
+"mixtral_8x22b (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "mixtral_8x22b"),
+"L3-70B-Euryale-v2.1 (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "L3-70B-Euryale-v2.1"),
+"midnight-rose (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "midnight-rose"),
+"unity (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "unity"),
+"unfiltered_x (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "unfiltered_x"),
 "deepseek-v3 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-v3"),
 "deepseek-r1 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-r1"),
 "deepseek-llm-67b-chat (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-llm-67b-chat"),
