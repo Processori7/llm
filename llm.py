@@ -276,17 +276,19 @@ def get_Polinations_img_models():
 
 #Получаю все текстовые модели Polinations
 def get_Polinations_chat_models():
+    model_functions = {}  # Инициализация словаря
     try:
         url = "https://text.pollinations.ai/models"
         resp = requests.get(url)
         if resp.ok:
             models = resp.json()
             for model in models:
-                # Проверяем, является ли модель текстовой
+                # Проверяем наличие ключа "description"
+                if "description" not in model:
+                    continue  # Пропускаем модели без описания
                 model_description = model["description"]
-                # Формируем ключ для словаря
-                key = f"{model_description} (Polination)"
-                # Добавляем в словарь с соответствующей лямбда-функцией
+                key = f"{model_description} (Polinations)"
+                # Фиксируем текущее значение model в замыкании
                 model_functions[key] = lambda user_input, model_name=model: communicate_with_Pollinations_chat(
                     user_input, model_name)
             return model_functions
