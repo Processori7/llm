@@ -25,7 +25,7 @@ import odf.opendocument
 import subprocess
 import zstandard as zstd
 
-from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, DeepSeek, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, PhindSearch, VLM, TurboSeek, Netwrck, QwenLM, Marcus, WEBS as w
+from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, VLM, TurboSeek, Netwrck, Marcus, QwenLM, WEBS as w
 from webscout.Provider.AISEARCH import Isou
 from webscout.Provider.TTI.aiarta import AIArtaImager
 from webscout import FastFluxImager
@@ -86,7 +86,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.57"
+CURRENT_VERSION = "1.58"
 
 if system_prompt != None:
     prompt = system_prompt
@@ -501,16 +501,6 @@ def communicate_with_ISou(user_input, model):
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-def communicate_with_DeepSeek(user_input, model):
-    try:
-        ai = DeepSeek()
-        ai.model = model
-        ai.system_prompt = prompt
-        response = ai.chat(user_input, stream=False)
-        return response
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
 def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
     try:
         ai = QwenLM(cookies_path=resource_path("cookies.json"))
@@ -604,14 +594,6 @@ def communicate_with_BlackboxAI(user_input, model):
         )
         response = ai.chat(user_input)
         return response.replace("$@$v=undefined-rv1$@$", "")
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
-def communicate_with_Phind(user_input):
-    try:
-        ph = PhindSearch()
-        response = ph.chat(user_input)
-        return response
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
@@ -727,9 +709,6 @@ model_functions = {
 "midnight-rose (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "midnight-rose"),
 "unity (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "unity"),
 "unfiltered_x (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "unfiltered_x"),
-"deepseek-v3 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-v3"),
-"deepseek-r1 (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-r1"),
-"deepseek-llm-67b-chat (Deepseek)":lambda user_input: communicate_with_DeepSeek(user_input, "deepseek-llm-67b-chat"),
 "gpt-3.5-turbo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo"),
 "gpt-3.5-turbo-16k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo-16k"),
 "gpt-3.5-turbo-1106 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo-1106"),
@@ -1100,7 +1079,6 @@ model_functions = {
 "(Scira) Sonnet-3.7_Web": lambda user_input: communicate_with_Scira(user_input, "scira-claude"),
 "(Scira) optimus_Web": lambda user_input: communicate_with_Scira(user_input, "scira-optimus"),
 "KoboldAI": communicate_with_KoboldAI,
-"Phind": communicate_with_Phind,
 "Felo_Web": communicate_with_Felo,
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
@@ -2279,7 +2257,7 @@ class MessageRequest(BaseModel):
 
 
 # Определение маршрута для получения списка моделей
-@app.get("/api/ai/models")
+@app.get("/api/ai/models", summary="Получить все доступные LLM модели")
 def get_models():
     filtered_models = [model for model in model_functions.keys() if
                        "_img" not in model and "(Photo Analyze)" not in model]
@@ -2287,7 +2265,7 @@ def get_models():
 
 
 # Определение маршрута для получения ответа от модели
-@app.post("/api/gpt/ans")
+@app.post("/api/gpt/ans", summary="Получить ответ на текстоый запрос")
 def get_answer(request: MessageRequest):
     model = request.model
     message = request.message
@@ -2309,7 +2287,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 # Главная страница чата
-@app.get("/chat")
+@app.get("/chat", summary="Открыть страницу чата Web UI")
 def read_chat():
     html_path = resource_path(os.path.join("static", "chat.html"))
     with open(html_path, "r", encoding="utf-8") as file:
