@@ -41,3 +41,4 @@ pytest
 pytest-asyncio
 httpx
 zstandard
+duckai
