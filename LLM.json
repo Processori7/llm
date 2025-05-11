@@ -252,6 +252,10 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/zstandard;zstandard/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/duckai;duckai/"
   }
  ],
  "nonPyinstallerOptions": {
