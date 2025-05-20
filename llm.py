@@ -1,5 +1,4 @@
 #!/usr/bin/env python3 - строка Шебанга, позволяет ОС быстрее понять, какой интерпретатор использовать
-import json
 import os
 import sys
 import pytesseract
@@ -23,11 +22,10 @@ import pandas as pd
 import odf.text
 import odf.opendocument
 import subprocess
-import zstandard as zstd
 
-from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, BLACKBOXAI, YouChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, ElectronHub, Felo, TurboSeek, Netwrck, Marcus, QwenLM
+from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
+from webscout.Provider.OPENAI import BLACKBOXAI
 from duckai import DuckAI
-from webscout.Provider.AISEARCH import Isou
 from webscout.Provider.TTI.aiarta import AIArtaImager
 from webscout import FastFluxImager
 from datetime import datetime
@@ -54,7 +52,6 @@ IMG_FOLDER_KEY = "IMG_FOLDER"
 MODE_KEY = "MODE"
 DEFAULT_COLOR_THEM_KEY = "DEFAULT_COLOR_THEM"
 WRITE_HISTORY_KEY = "WRITE_HISTORY"
-ELECTRON_API_KEY = "ELECTRON_API_KEY"
 SYSTEM_PROMPT = "SYSTEM_PROMPT"
 FREEAICHAT_API_KEY = "FREEAICHAT_API_KEY"
 
@@ -68,7 +65,6 @@ img_folder_val  = None
 mode_val  = None
 def_color_them_val  = None
 write_history_val = None
-electron_api_key_val = None
 system_prompt_val = None
 freeaichat_api_key_val = None
 
@@ -83,14 +79,13 @@ if os.path.exists(".env"):
     mode_val = os.getenv(MODE_KEY)
     def_color_them_val = os.getenv(DEFAULT_COLOR_THEM_KEY)
     write_history_val = os.getenv(WRITE_HISTORY_KEY)
-    electron_api_key_val = os.getenv(ELECTRON_API_KEY)
     system_prompt_val = os.getenv(SYSTEM_PROMPT)
     freeaichat_api_key_val = os.getenv(FREEAICHAT_API_KEY)
 
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.59"
+CURRENT_VERSION = "1.60"
 
 if system_prompt_val != None:
     prompt = system_prompt_val
@@ -301,63 +296,6 @@ def get_Polinations_chat_models():
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-
-def get_ElectronHub_credits():
-    url = "https://api.electronhub.top/user/me"
-    headers = {
-        "accept": "*/*",
-        "accept-encoding": "gzip, deflate, br, zstd",
-        "accept-language": "ru-RU,ru;q=0.8",
-        "authorization": "Bearer " + electron_api_key_val,
-        "cache-control": "no-cache",
-        "dnt": "1",
-        "origin": "https://playground.electronhub.top",
-        "pragma": "no-cache",
-        "referer": "https://playground.electronhub.top/",
-        "sec-ch-ua": '"Chromium";v="134", "Not:A-Brand";v="24", "Brave";v="134"',
-        "sec-ch-ua-mobile": "?1",
-        "sec-ch-ua-platform": '"Windows"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-site",
-        "sec-gpc": "1",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
-    }
-
-    response = requests.get(url, headers=headers)
-
-    # Проверка Content-Encoding
-    if response.headers.get("Content-Encoding") == "zstd":
-        try:
-            # Используем потоковый декодер для zstd
-            dctx = zstd.ZstdDecompressor()
-            with dctx.stream_reader(response.content) as reader:
-                decompressed_data = reader.read().decode("utf-8")
-
-            # Попытка преобразовать данные в JSON
-            data = json.loads(decompressed_data)
-            # print(data)
-            credits = data.get("credits")
-            return int(credits)
-        except zstd.ZstdError as e:
-            print("Zstd decompression error:", str(e))
-            return f"Zstd decompression error: {str(e)}"
-        except ValueError as e:
-            print("Failed to parse JSON after decompression:")
-            print(decompressed_data)
-            return f"Error parsing JSON: {str(e)}"
-    else:
-        # Обработка обычного JSON
-        try:
-            data = response.json()
-            print(data)
-            credits = data.get("credits")
-            return int(credits)
-        except ValueError as e:
-            print("Response is not valid JSON:")
-            print(response.text)
-            return f"Error parsing JSON: {str(e)}"
-
 def communicate_with_Toolbaz(user_input, model):
     try:
         ai = Toolbaz()
@@ -385,21 +323,6 @@ def communicate_with_ExaChat(user_input, model):
         ai.system_prompt = prompt
         response = ai.chat(user_input)
         return response
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
-def communicate_with_ElectronHub(user_input, model):
-    try:
-        ai = ElectronHub(api_key=electron_api_key_val)
-        ai.model = model
-        ai.system_prompt = prompt
-        response = ai.chat(user_input, stream=True)
-        full_response = ""
-        for chunk in response:
-            full_response += chunk
-        credits = get_ElectronHub_credits()
-        full_response = full_response + f"\nBalance: {credits}"
-        return full_response
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
@@ -485,35 +408,16 @@ def communicate_with_FreeAIChat(user_input, model):
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-def communicate_with_ISou(user_input, model):
+def communicate_with_LLMChat(user_input, model):
     try:
-        ai = Isou()
+        ai = LLMChat()
         ai.model = model
-        response = ai.search(user_input, stream=True, raw=True)
-        all_text = ""
-        all_links = []
+        response = ai.chat(user_input, stream=True)
+        response_text = ""
         for chunk in response:
-            text = chunk.get("text", "")
-            links = chunk.get("links", [])
-            all_text += text
-            all_links.extend(links)
+            response_text += chunk
 
-        unique_links = list(set(all_links))
-
-        all_text = re.sub(r'\s+', ' ', all_text).strip()
-        final_text = ai.format_response(all_text, unique_links)
-        return final_text
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
-def communicate_with_Qwenlm(user_input, model, chat_type="t2t"):
-    try:
-        ai = QwenLM(cookies_path=resource_path("cookies.json"))
-        ai.chat_type=chat_type
-        ai.model = model
-        ai.system_prompt = prompt
-        response = ai.chat(user_input, stream=False)
-        return response
+        return response_text
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
@@ -559,36 +463,15 @@ def communicate_with_Felo(user_input):
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-def communicate_with_YouChat(user_input, model):
+def communicate_with_BlackboxAI(user_input, model):
     try:
-        ai = YouChat()
-        ai.model = model
-        response = ai.chat(user_input)
+        client = BLACKBOXAI()
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": user_input}]
+        )
 
-        # Список строк, которые нужно удалить (или их части)
-        substrings_to_remove = [
-            "Please log in to access the Model Agent",
-            "For more information, check out our YouPro plans here: https://you.com/plans.",
-            "Answering your question without the Model Agent:",
-            "Приветствие"
-        ]
-
-        # Разбиваем ответ на строки
-        lines = response.splitlines()
-
-        # Фильтруем строки, удаляя те, что содержат нежелательные подстроки
-        filtered_lines = [
-            line for line in lines
-            if not any(sub in line for sub in substrings_to_remove)
-        ]
-
-        # Соединяем обратно
-        response = "\n".join(filtered_lines)
-
-        # Убираем markdown-подобные символы
-        response = response.replace('####', '').replace('**', '')
-
-        return response
+        return response.choices[0].message.content
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
@@ -607,69 +490,69 @@ def communicate_with_KoboldAI(user_input):
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-def communicate_with_BlackboxAI(user_input, model):
-    try:
-        ai = BLACKBOXAI(
-            is_conversation=True,
-            max_tokens=800,
-            timeout=30,
-            intro=None,
-            filepath=None,
-            update_file=True,
-            proxies={},
-            history_offset=10250,
-            act=None,
-            model=model
-        )
-        response = ai.chat(user_input)
-        return response.replace("$@$v=undefined-rv1$@$", "")
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
 model_functions = {
 "GPT-O3-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "o3-mini"),
 "GPT-4o-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
 "Claude-3-haiku (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
-"gpt_4_5 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_5"),
-"claude_3_7_sonnet (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_7_sonnet"),
-"openai-o3-mini-high (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o3_mini_high"),
-"openai-o3-mini-medium (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o3_mini_medium"),
-"openai-o1 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1"),
-"openai-o1-preview (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_preview"),
-"openai-o1-mini (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "openai_o1_mini"),
-"gpt-4o-mini (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o_mini"),
-"gpt-4o (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4o"),
-"gpt-4-turbo (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4_turbo"),
-"gpt-4 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gpt_4"),
-"claude-3.5-sonnet (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_sonnet"),
-"claude-3-opus (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_opus"),
-"claude-3-sonnet (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_sonnet"),
-"claude-3.5-haiku (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "claude_3_5_haiku"),
-"deepseek-r1 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "deepseek_r1"),
-"deepseek-v3 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "deepseek_v3"),
-"llama3-3.70b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_3_70b"),
-"llama3-2.90b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_2_90b"),
-"llama3-1.405b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "llama3_1_405b"),
-"mistral-large-2 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "mistral_large_2"),
-"gemini-1.5-flash (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_flash"),
-"gemini-1.5-pro (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "gemini_1_5_pro"),
-"databricks-dbrx-instruct (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "databricks_dbrx_instruct"),
-"qwen2.5-72b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_72b"),
-"qwen2.5-coder-32b (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "qwen2p5_coder_32b"),
-"command-r-plus (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "command_r_plus"),
-"solar-1-mini (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "solar_1_mini"),
-"dolphin-2.5 (YouChat)": lambda user_input: communicate_with_YouChat(user_input, "dolphin_2_5"),
-# "Deepseek-v3 (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "deepseek-v3"),
-# "Deepseek-r1 (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "deepseek-r1"),
-# "Deepseek-chat (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "deepseek-chat"),
-# "Mixtral-small-28b (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "mixtral-small-28b"),
-# "Dbrx-instruct (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "dbrx-instruct"),
-# "Qwq-32b (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "qwq-32b"),
-# "Hermes-2-dpo (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "hermes-2-dpo"),
-# "Claude-3.5-sonnet (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "claude-3.5-sonnet"),
-# "Gemini-1.5-flash (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gemini-1.5-flash"),
-# "Gemini-1.5-pro (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gemini-1.5-pro"),
-# "Gemini-2.0-flash (Blackbox)": lambda user_input: communicate_with_BlackboxAI(user_input, "gemini-2.0-flash"),
+"GPT-4.1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "GPT-4.1"),
+"o3-mini (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "o3-mini"),
+"gpt-4.1-nano (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4.1-nano"),
+"Claude-sonnet-3.7 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Claude-sonnet-3.7"),
+"Claude-sonnet-3.5 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Claude-sonnet-3.5"),
+"DeepSeek-R1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepSeek-R1"),
+"Mistral-Small-24B-Instruct-2501 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral-Small-24B-Instruct-2501"),
+"Deepcoder 14B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Deepcoder 14B Preview"),
+"DeepHermes 3 Llama 3 8B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepHermes 3 Llama 3 8B Preview"),
+"DeepSeek R1 Zero (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepSeek R1 Zero"),
+"Dolphin3.0 Mistral 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Dolphin3.0 Mistral 24B"),
+"Dolphin3.0 R1 Mistral 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Dolphin3.0 R1 Mistral 24B"),
+"Flash 3 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Flash 3"),
+"Gemini 2.0 Flash Experimental (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemini 2.0 Flash Experimental"),
+"Gemma 2 9B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 2 9B"),
+"Gemma 3 12B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 12B"),
+"Gemma 3 1B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 1B"),
+"Gemma 3 27B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 27B"),
+"Gemma 3 4B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 4B"),
+"Kimi VL A3B Thinking (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Kimi VL A3B Thinking"),
+"Llama 3.1 8B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.1 8B Instruct"),
+"Llama 3.1 Nemotron Ultra 253B v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.1 Nemotron Ultra 253B v1"),
+"Llama 3.2 11B Vision Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 11B Vision Instruct"),
+"Llama 3.2 1B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 1B Instruct"),
+"Llama 3.2 3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 3B Instruct"),
+"Llama 3.3 70B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.3 70B Instruct"),
+"Llama 3.3 Nemotron Super 49B v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.3 Nemotron Super 49B v1"),
+"Llama 4 Maverick (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 4 Maverick"),
+"Llama 4 Scout (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 4 Scout"),
+"Mistral 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral 7B Instruct"),
+"Mistral Nemo (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Nemo"),
+"Mistral Small 3 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Small 3"),
+"Mistral Small 3.1 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Small 3.1 24B"),
+"Molmo 7B D (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Molmo 7B D"),
+"Moonlight 16B A3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Moonlight 16B A3B Instruct"),
+"Qwen2.5 72B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 72B Instruct"),
+"Qwen2.5 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 7B Instruct"),
+"Qwen2.5 Coder 32B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 Coder 32B Instruct"),
+"Qwen2.5 VL 32B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 32B Instruct"),
+"Qwen2.5 VL 3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 3B Instruct"),
+"Qwen2.5 VL 72B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 72B Instruct"),
+"Qwen2.5-VL 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5-VL 7B Instruct"),
+"Qwerky 72B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwerky 72B"),
+"QwQ 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B"),
+"QwQ 32B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B Preview"),
+"QwQ 32B RpR v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B RpR v1"),
+"R1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1"),
+"R1 Distill Llama 70B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Llama 70B"),
+"R1 Distill Qwen 14B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 14B"),
+"R1 Distill Qwen 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 32B"),
+"llama-3.1-70b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.1-70b-instruct"),
+"llama-3.1-8b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.1-8b-instruct"),
+"llama-3.2-3b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.2-3b-instruct"),
+"llama-3.2-1b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.2-1b-instruct"),
+"llama-3.3-70b-instruct-fp8-fast (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.3-70b-instruct-fp8-fast"),
+"deepseek-ai/deepseek-r1-distill-qwen-32b (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"),
+"meta/llama-4-scout-17b-16e-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-4-scout-17b-16e-instruct"),
+"mistralai/mistral-small-3.1-24b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/mistralai/mistral-small-3.1-24b-instruct"),
+"google/gemma-3-12b-it (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/google/gemma-3-12b-it"),
 "llama-3-lumimaid-8b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "neversleep/llama-3-lumimaid-8b:extended"),
 "llama-3.1-lumimaid-8b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
 "grok-2 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "x-ai/grok-2"),
@@ -682,18 +565,6 @@ model_functions = {
 "llama-3.1-nemotron-70b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "nvidia/llama-3.1-nemotron-70b-instruct"),
 "deepseek-r1 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "deepseek/deepseek-r1"),
 "deepseek-chat(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "deepseek/deepseek-chat"),
-# "qwen2.5-coder-32b-instruct (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen2.5-coder-32b-instruct", "t2t"),
-# "qwen-plus-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "t2t"),
-# "qwen-max-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "t2t"),
-# "qwen-turbo-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "t2t"),
-# "qvq-72b-preview (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "t2t"),
-# "qvq-32b (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b", "t2t"),
-# "qwen-vl-max-latest (Qwenlm)":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-vl-max-latest", "t2t"),
-# "(Qwenlm) qwen-plus-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-plus-latest", "search"),
-# "(Qwenlm) qwen-turbo-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-turbo-latest", "search"),
-# "(Qwenlm) qwen-max-latest_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qwen-max-latest", "search"),
-# "(Qwenlm) qvq-72b-preview_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-72b-preview", "search"),
-# "(Qwenlm) qvq-32b-preview_Web":lambda user_input: communicate_with_Qwenlm(user_input, "qvq-32b-preview", "search"),
 "exaanswer (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "exaanswer"),
 "gemini-2.0-flash (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemini-2.0-flash"),
 "gemini-2.0-flash-thinking-exp-01-21 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-flash-thinking-exp-01-21"),
@@ -740,303 +611,6 @@ model_functions = {
 "midnight-rose (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "midnight-rose"),
 "unity (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "unity"),
 "unfiltered_x (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "unfiltered_x"),
-# "gpt-3.5-turbo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo"),
-# "gpt-3.5-turbo-16k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo-16k"),
-# "gpt-3.5-turbo-1106 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo-1106"),
-# "gpt-3.5-turbo-0125 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-3.5-turbo-0125"),
-# "gpt-4 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4"),
-# "gpt-4-turbo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4-turbo"),
-# "gpt-4-turbo-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4-turbo-preview"),
-# "gpt-4-0125-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4-0125-preview"),
-# "gpt-4-1106-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4-1106-preview"),
-# "gpt-4o (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4o"),
-# "gpt-4o-2024-05-13 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4o-2024-05-13"),
-# "gpt-4o-2024-08-06 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4o-2024-08-06"),
-# "gpt-4o-2024-11-20 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4o-2024-11-20"),
-# "gpt-4o-mini (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4o-mini"),
-# "gpt-4o-mini-2024-07-18 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4o-mini-2024-07-18"),
-# "chatgpt-4o-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "chatgpt-4o-latest"),
-# "gpt-4.5-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4.5-preview"),
-# "gpt-4.5-preview-2025-02-27 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gpt-4.5-preview-2025-02-27"),
-# "o1-mini (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o1-mini"),
-# "o1-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o1-preview"),
-# "o1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o1"),
-# "o1-low (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o1-low"),
-# "o1-high (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o1-high"),
-# "o3-mini (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o3-mini"),
-# "o3-mini-low (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o3-mini-low"),
-# "o3-mini-high (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o3-mini-high"),
-# "o3-mini-online (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "o3-mini-online"),
-# "claude-2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-2"),
-# "claude-2.1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-2.1"),
-# "claude-3-opus-20240229 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-opus-20240229"),
-# "claude-3-sonnet-20240229 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-sonnet-20240229"),
-# "claude-3-haiku-20240307 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-haiku-20240307"),
-# "claude-3-5-sonnet-20240620 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-5-sonnet-20240620"),
-# "claude-3-5-sonnet-20241022 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-5-sonnet-20241022"),
-# "claude-3-5-haiku-20241022 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-5-haiku-20241022"),
-# "claude-3-7-sonnet-20250219 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-7-sonnet-20250219"),
-# "claude-3-7-sonnet-20250219-thinking (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "claude-3-7-sonnet-20250219-thinking"),
-# "gemini-1.0-pro (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.0-pro"),
-# "gemini-1.5-pro (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-pro"),
-# "gemini-1.5-pro-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-pro-latest"),
-# "gemini-1.5-flash-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-flash-8b"),
-# "gemini-1.5-flash (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-flash"),
-# "gemini-1.5-flash-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-flash-latest"),
-# "gemini-1.5-flash-exp (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-flash-exp"),
-# "gemini-1.5-flash-online (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-1.5-flash-online"),
-# "gemini-exp-1206 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-exp-1206"),
-# "learnlm-1.5-pro-experimental (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "learnlm-1.5-pro-experimental"),
-# "gemini-2.0-flash-001 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-001"),
-# "gemini-2.0-flash-exp (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-exp"),
-# "gemini-2.0-flash-thinking-exp (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-thinking-exp"),
-# "gemini-2.0-flash-thinking-exp-1219 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-thinking-exp-1219"),
-# "gemini-2.0-flash-thinking-exp-01-21 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-thinking-exp-01-21"),
-# "gemini-2.0-flash-lite-preview-02-05 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-lite-preview-02-05"),
-# "gemini-2.0-flash-lite-001 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-flash-lite-001"),
-# "gemini-2.0-pro-exp-02-05 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemini-2.0-pro-exp-02-05"),
-# "palm-2-chat-bison (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "palm-2-chat-bison"),
-# "palm-2-codechat-bison (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "palm-2-codechat-bison"),
-# "palm-2-chat-bison-32k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "palm-2-chat-bison-32k"),
-# "palm-2-codechat-bison-32k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "palm-2-codechat-bison-32k"),
-# "llama-2-13b-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-2-13b-chat"),
-# "llama-2-70b-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-2-70b-chat"),
-# "llama-guard-3-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-guard-3-8b"),
-# "code-llama-34b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "code-llama-34b-instruct"),
-# "llama-3-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3-8b"),
-# "llama-3-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3-70b"),
-# "llama-3.1-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-8b"),
-# "llama-3.1-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-70b"),
-# "llama-3.1-405b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-405b"),
-# "llama-3.2-1b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.2-1b"),
-# "llama-3.2-3b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.2-3b"),
-# "llama-3.2-11b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.2-11b"),
-# "llama-3.2-90b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.2-90b"),
-# "llama-3.3-70b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.3-70b-instruct"),
-# "llama-3.1-nemotron-70b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-nemotron-70b-instruct"),
-# "llama-3.1-tulu-3-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-tulu-3-8b"),
-# "llama-3.1-tulu-3-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-tulu-3-70b"),
-# "llama-3.1-tulu-3-405b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-tulu-3-405b"),
-# "mistral-7b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-7b-instruct"),
-# "mistral-tiny-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-tiny-latest"),
-# "mistral-tiny (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-tiny"),
-# "mistral-tiny-2312 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-tiny-2312"),
-# "mistral-tiny-2407 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-tiny-2407"),
-# "mistral-small-24b-instruct-2501 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-small-24b-instruct-2501"),
-# "mistral-small-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-small-latest"),
-# "mistral-small (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-small"),
-# "mistral-small-2312 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-small-2312"),
-# "mistral-small-2402 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-small-2402"),
-# "mistral-small-2409 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-small-2409"),
-# "mistral-medium-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-medium-latest"),
-# "mistral-medium (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-medium"),
-# "mistral-medium-2312 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-medium-2312"),
-# "mistral-large-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-large-latest"),
-# "mistral-large-2411 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-large-2411"),
-# "mistral-large-2407 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-large-2407"),
-# "mistral-large-2402 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-large-2402"),
-# "mixtral-8x7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mixtral-8x7b"),
-# "mixtral-8x22b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mixtral-8x22b"),
-# "deepseek-r1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1"),
-# "deepseek-r1-nitro (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-nitro"),
-# "deepseek-r1-distill-llama-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-distill-llama-8b"),
-# "deepseek-r1-distill-llama-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-distill-llama-70b"),
-# "deepseek-r1-distill-qwen-1.5b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-distill-qwen-1.5b"),
-# "deepseek-r1-distill-qwen-7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-distill-qwen-7b"),
-# "deepseek-r1-distill-qwen-14b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-distill-qwen-14b"),
-# "deepseek-r1-distill-qwen-32b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-r1-distill-qwen-32b"),
-# "deepseek-v3 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-v3"),
-# "deepseek-coder (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-coder"),
-# "deepseek-v2.5 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-v2.5"),
-# "deepseek-vl2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-vl2"),
-# "deepseek-llm-67b-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-llm-67b-chat"),
-# "deepseek-math-7b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-math-7b-instruct"),
-# "deepseek-coder-6.7b-base-awq (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-coder-6.7b-base-awq"),
-# "deepseek-coder-6.7b-instruct-awq (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deepseek-coder-6.7b-instruct-awq"),
-# "qwen-1.5-0.5b-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-1.5-0.5b-chat"),
-# "qwen-1.5-1.8b-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-1.5-1.8b-chat"),
-# "qwen-1.5-14b-chat-awq (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-1.5-14b-chat-awq"),
-# "qwen-1.5-7b-chat-awq (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-1.5-7b-chat-awq"),
-# "qwen-2-7b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2-7b-instruct"),
-# "qwen-2-72b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2-72b-instruct"),
-# "qwen-2-vl-7b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2-vl-7b-instruct"),
-# "qwen-2-vl-72b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2-vl-72b-instruct"),
-# "qwen-2.5-7b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2.5-7b-instruct"),
-# "qwen-2.5-32b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2.5-32b-instruct"),
-# "qwen-2.5-72b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2.5-72b-instruct"),
-# "qwen-2.5-coder-32b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-2.5-coder-32b-instruct"),
-# "qwq-32b-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwq-32b-preview"),
-# "qvq-72b-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qvq-72b-preview"),
-# "qwen-vl-plus (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-vl-plus"),
-# "qwen2.5-vl-72b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen2.5-vl-72b-instruct"),
-# "qwen-turbo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-turbo"),
-# "qwen-plus (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-plus"),
-# "qwen-max (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "qwen-max"),
-# "phi-4 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "phi-4"),
-# "phi-3.5-mini-128k-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "phi-3.5-mini-128k-instruct"),
-# "phi-3-medium-128k-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "phi-3-medium-128k-instruct"),
-# "phi-3-mini-128k-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "phi-3-mini-128k-instruct"),
-# "phi-2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "phi-2"),
-# "gemma-7b-it (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemma-7b-it"),
-# "gemma-2-9b-it (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemma-2-9b-it"),
-# "gemma-2-27b-it (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "gemma-2-27b-it"),
-# "nemotron-4-340b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "nemotron-4-340b"),
-# "pixtral-large-2411 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "pixtral-large-2411"),
-# "pixtral-12b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "pixtral-12b"),
-# "open-mistral-nemo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "open-mistral-nemo"),
-# "open-mistral-nemo-2407 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "open-mistral-nemo-2407"),
-# "open-mixtral-8x22b-2404 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "open-mixtral-8x22b-2404"),
-# "open-mixtral-8x7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "open-mixtral-8x7b"),
-# "codestral-mamba (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "codestral-mamba"),
-# "codestral-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "codestral-latest"),
-# "codestral-2405 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "codestral-2405"),
-# "codestral-2412 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "codestral-2412"),
-# "codestral-2501 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "codestral-2501"),
-# "codestral-2411-rc5 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "codestral-2411-rc5"),
-# "ministral-3b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ministral-3b"),
-# "ministral-3b-2410 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ministral-3b-2410"),
-# "ministral-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ministral-8b"),
-# "ministral-8b-2410 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ministral-8b-2410"),
-# "mistral-saba-latest (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-saba-latest"),
-# "mistral-saba-2502 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-saba-2502"),
-# "f1-mini-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "f1-mini-preview"),
-# "f1-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "f1-preview"),
-# "dolphin-mixtral-8x7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "dolphin-mixtral-8x7b"),
-# "dolphin-mixtral-8x22b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "dolphin-mixtral-8x22b"),
-# "dolphin3.0-mistral-24b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "dolphin3.0-mistral-24b"),
-# "dolphin3.0-r1-mistral-24b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "dolphin3.0-r1-mistral-24b"),
-# "dbrx-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "dbrx-instruct"),
-# "command (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command"),
-# "command-light (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-light"),
-# "command-nightly (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-nightly"),
-# "command-light-nightly (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-light-nightly"),
-# "command-r (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r"),
-# "command-r-03-2024 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r-03-2024"),
-# "command-r-08-2024 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r-08-2024"),
-# "command-r-plus (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r-plus"),
-# "command-r-plus-04-2024 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r-plus-04-2024"),
-# "command-r-plus-08-2024 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r-plus-08-2024"),
-# "command-r7b-12-2024 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "command-r7b-12-2024"),
-# "c4ai-aya-expanse-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "c4ai-aya-expanse-8b"),
-# "c4ai-aya-expanse-32b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "c4ai-aya-expanse-32b"),
-# "reka-flash (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "reka-flash"),
-# "reka-core (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "reka-core"),
-# "grok-2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-2"),
-# "grok-2-mini (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-2-mini"),
-# "grok-beta (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-beta"),
-# "grok-vision-beta (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-vision-beta"),
-# "grok-2-1212 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-2-1212"),
-# "grok-2-vision-1212 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-2-vision-1212"),
-# "grok-3-early (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-3-early"),
-# "grok-3-preview-02-24 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "grok-3-preview-02-24"),
-# "sonar-deep-research (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sonar-deep-research"),
-# "sonar-reasoning-pro (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sonar-reasoning-pro"),
-# "sonar-reasoning (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sonar-reasoning"),
-# "sonar-pro (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sonar-pro"),
-# "sonar (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sonar"),
-# "llama-3.1-sonar-small-128k-online (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-sonar-small-128k-online"),
-# "llama-3.1-sonar-large-128k-online (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-sonar-large-128k-online"),
-# "llama-3.1-sonar-huge-128k-online (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-sonar-huge-128k-online"),
-# "llama-3.1-sonar-small-128k-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-sonar-small-128k-chat"),
-# "llama-3.1-sonar-large-128k-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-sonar-large-128k-chat"),
-# "wizardlm-2-7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "wizardlm-2-7b"),
-# "wizardlm-2-8x22b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "wizardlm-2-8x22b"),
-# "minimax-01 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "minimax-01"),
-# "jamba-1.5-large (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "jamba-1.5-large"),
-# "jamba-1.5-mini (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "jamba-1.5-mini"),
-# "jamba-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "jamba-instruct"),
-# "openchat-3.5-7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "openchat-3.5-7b"),
-# "openchat-3.6-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "openchat-3.6-8b"),
-# "aion-1.0 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "aion-1.0"),
-# "aion-1.0-mini (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "aion-1.0-mini"),
-# "aion-rp-llama-3.1-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "aion-rp-llama-3.1-8b"),
-# "nova-lite-v1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "nova-lite-v1"),
-# "nova-micro-v1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "nova-micro-v1"),
-# "nova-pro-v1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "nova-pro-v1"),
-# "inflection-3-pi (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "inflection-3-pi"),
-# "inflection-3-productivity (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "inflection-3-productivity"),
-# "mytho-max-l2-13b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mytho-max-l2-13b"),
-# "deephermes-3-llama-3-8b-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "deephermes-3-llama-3-8b-preview"),
-# "hermes-3-llama-3.1-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hermes-3-llama-3.1-8b"),
-# "hermes-3-llama-3.1-405b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hermes-3-llama-3.1-405b"),
-# "hermes-2-pro-llama-3-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hermes-2-pro-llama-3-8b"),
-# "nous-hermes-2-mixtral-8x7b-dpo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "nous-hermes-2-mixtral-8x7b-dpo"),
-# "doubao-lite-4k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-lite-4k"),
-# "doubao-lite-32k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-lite-32k"),
-# "doubao-pro-4k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-pro-4k"),
-# "doubao-pro-32k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "doubao-pro-32k"),
-# "ernie-lite-8k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ernie-lite-8k"),
-# "ernie-tiny-8k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ernie-tiny-8k"),
-# "ernie-speed-8k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ernie-speed-8k"),
-# "ernie-speed-128k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "ernie-speed-128k"),
-# "hunyuan-lite (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hunyuan-lite"),
-# "hunyuan-standard-2025-02-10 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hunyuan-standard-2025-02-10"),
-# "hunyuan-large-2025-02-10 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "hunyuan-large-2025-02-10"),
-# "glm-3-130b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-3-130b"),
-# "glm-4-flash (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-4-flash"),
-# "glm-4-long (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-4-long"),
-# "glm-4-airx (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-4-airx"),
-# "glm-4-air (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-4-air"),
-# "glm-4-plus (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-4-plus"),
-# "glm-4-alltools (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "glm-4-alltools"),
-# "yi-vl-plus (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "yi-vl-plus"),
-# "yi-large (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "yi-large"),
-# "yi-large-turbo (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "yi-large-turbo"),
-# "yi-large-rag (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "yi-large-rag"),
-# "yi-medium (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "yi-medium"),
-# "yi-34b-chat-200k (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "yi-34b-chat-200k"),
-# "spark-desk-v1.5 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "spark-desk-v1.5"),
-# "step-2-16k-exp-202412 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "step-2-16k-exp-202412"),
-# "granite-3.1-2b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "granite-3.1-2b-instruct"),
-# "granite-3.1-8b-instruct (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "granite-3.1-8b-instruct"),
-# "solar-0-70b-16bit (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "solar-0-70b-16bit"),
-# "mistral-nemo-inferor-12b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mistral-nemo-inferor-12b"),
-# "unslopnemo-12b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "unslopnemo-12b"),
-# "rocinante-12b-v1.1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "rocinante-12b-v1.1"),
-# "rocinante-12b-v1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "rocinante-12b-v1"),
-# "sky-t1-32b-preview (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sky-t1-32b-preview"),
-# "lfm-3b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "lfm-3b"),
-# "lfm-7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "lfm-7b"),
-# "lfm-40b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "lfm-40b"),
-# "rogue-rose-103b-v0.2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "rogue-rose-103b-v0.2"),
-# "eva-llama-3.33-70b-v0.0 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "eva-llama-3.33-70b-v0.0"),
-# "eva-llama-3.33-70b-v0.1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "eva-llama-3.33-70b-v0.1"),
-# "eva-qwen2.5-72b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "eva-qwen2.5-72b"),
-# "eva-qwen2.5-32b-v0.2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "eva-qwen2.5-32b-v0.2"),
-# "sorcererlm-8x22b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "sorcererlm-8x22b"),
-# "mythalion-13b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mythalion-13b"),
-# "zephyr-7b-beta (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "zephyr-7b-beta"),
-# "zephyr-7b-alpha (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "zephyr-7b-alpha"),
-# "toppy-m-7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "toppy-m-7b"),
-# "openhermes-2.5-mistral-7b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "openhermes-2.5-mistral-7b"),
-# "l3-lunaris-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l3-lunaris-8b"),
-# "llama-3.1-lumimaid-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-lumimaid-8b"),
-# "llama-3.1-lumimaid-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-lumimaid-70b"),
-# "llama-3-lumimaid-8b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3-lumimaid-8b"),
-# "llama-3-lumimaid-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3-lumimaid-70b"),
-# "llama3-openbiollm-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama3-openbiollm-70b"),
-# "l3.1-70b-hanami-x1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l3.1-70b-hanami-x1"),
-# "magnum-v4-72b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "magnum-v4-72b"),
-# "magnum-v2-72b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "magnum-v2-72b"),
-# "magnum-72b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "magnum-72b"),
-# "mini-magnum-12b-v1.1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "mini-magnum-12b-v1.1"),
-# "remm-slerp-l2-13b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "remm-slerp-l2-13b"),
-# "midnight-rose-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "midnight-rose-70b"),
-# "athene-v2-chat (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "athene-v2-chat"),
-# "airoboros-l2-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "airoboros-l2-70b"),
-# "xwin-lm-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "xwin-lm-70b"),
-# "noromaid-20b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "noromaid-20b"),
-# "violet-twilight-v0.2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "violet-twilight-v0.2"),
-# "saiga-nemo-12b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "saiga-nemo-12b"),
-# "l3-8b-stheno-v3.2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l3-8b-stheno-v3.2"),
-# "llama-3.1-8b-lexi-uncensored-v2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "llama-3.1-8b-lexi-uncensored-v2"),
-# "l3.3-70b-euryale-v2.3 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l3.3-70b-euryale-v2.3"),
-# "l3.3-ms-evayale-70b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l3.3-ms-evayale-70b"),
-# "70b-l3.3-cirrus-x1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "70b-l3.3-cirrus-x1"),
-# "l31-70b-euryale-v2.2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l31-70b-euryale-v2.2"),
-# "l3-70b-euryale-v2.1 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "l3-70b-euryale-v2.1"),
-# "fimbulvetr-11b-v2 (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "fimbulvetr-11b-v2"),
-# "goliath-120b (ElectronHub)": lambda user_input: communicate_with_ElectronHub(user_input, "goliath-120b"),
 "r1-1776 (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "r1-1776"),
 "sonar-pro (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar-pro"),
 "sonar (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar"),
@@ -1054,10 +628,13 @@ model_functions = {
 "OLMoE-1B-7B-0924-Instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "OLMoE-1B-7B-0924-Instruct"),
 "tulu-3-1-8b (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "tulu-3-1-8b"),
 "olmoe-0125 (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "olmoe-0125"),
-# "deepseek-chat (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-chat"),
-# "gpt-4o-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4o-mini"),
-# "deepseek-r1 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-r1"),
-# "gemini-2.0-flash-001 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "google/gemini-2.0-flash-001"),
+"google/gemini-2.0-flash-001 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "google/gemini-2.0-flash-001"),
+"deepseek/deepseek-chat (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-chat"),
+"deepseek/deepseek-r1 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-r1"),
+"openai/gpt-4o-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4o-mini"),
+"openai/gpt-4.1-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4.1-mini"),
+"x-ai/grok-3-mini-beta (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "x-ai/grok-3-mini-beta"),
+"meta-llama/llama-4-scout (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "meta-llama/llama-4-scout"),
 "Mistral Nemo (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mistral Nemo"),
 "Mistral Large (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mistral Large"),
 "Mixtral 8x22B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mixtral 8x22B"),
@@ -1101,16 +678,12 @@ model_functions = {
 "(Venice) llama-3.2-3b-akash_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.2-3b-akash"),
 "(Venice) qwen2dot5-coder-32b_Web": lambda user_input: communicate_with_Venice(user_input, "qwen2dot5-coder-32b"),
 "(Venice) deepseek-coder-v2-lite": lambda user_input: communicate_with_Venice(user_input, "deepseek-coder-v2-lite"),
-# "(Isou) DeepSeek-R1-Distill-Qwen-32B_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"),
-# "(Isou) Qwen2.5-72B-Instruct-128K_Web":lambda user_input: communicate_with_ISou(user_input, "siliconflow:Qwen/Qwen2.5-72B-Instruct-128K"),
-# "(Isou) Deepseek-reasoner_Web":lambda user_input: communicate_with_ISou(user_input, "deepseek-reasoner"),
 "(Scira) Grok3_Web": lambda user_input: communicate_with_Scira(user_input, "scira-default"),
 "(Scira) Grok3-mini_Web": lambda user_input: communicate_with_Scira(user_input, "scira-grok-3-mini"),
 "(Scira) Grok2-Vision_Web": lambda user_input: communicate_with_Scira(user_input, "scira-vision"),
 "(Scira) Sonnet-3.7_Web": lambda user_input: communicate_with_Scira(user_input, "scira-claude"),
 "(Scira) optimus_Web": lambda user_input: communicate_with_Scira(user_input, "scira-optimus"),
 "KoboldAI": communicate_with_KoboldAI,
-# "Felo_Web": communicate_with_Felo,
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
 "Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),

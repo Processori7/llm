@@ -256,6 +256,18 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/duckai;duckai/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/STPyV8.py;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/_STPyV8.cp312-win_amd64.pyd;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/__pycache__/STPyV8.cpython-312.pyc;."
   }
  ],
  "nonPyinstallerOptions": {
