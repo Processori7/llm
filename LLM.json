@@ -23,7 +23,7 @@
   },
   {
    "optionDest": "clean_build",
-   "value": false
+   "value": true
   },
   {
    "optionDest": "strip",
@@ -31,11 +31,15 @@
   },
   {
    "optionDest": "noupx",
-   "value": false
+   "value": true
   },
   {
    "optionDest": "disable_windowed_traceback",
    "value": false
+  },
+  {
+   "optionDest": "version_file",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/version.txt"
   },
   {
    "optionDest": "uac_admin",

@@ -26,8 +26,6 @@ import subprocess
 from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
 from webscout.Provider.OPENAI import BLACKBOXAI
 from duckai import DuckAI
-from webscout.Provider.TTI.aiarta import AIArtaImager
-from webscout import FastFluxImager
 from datetime import datetime
 from tkinter import messagebox, filedialog, PhotoImage
 from PIL import Image
@@ -40,6 +38,8 @@ from fastapi.responses import HTMLResponse
 from docx import Document
 from dotenv import load_dotenv
 from pyzbar.pyzbar import decode
+
+
 # Загружаем переменные из .env файла в окружение
 load_dotenv()
 
@@ -85,7 +85,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.60"
+CURRENT_VERSION = "1.61"
 
 if system_prompt_val != None:
     prompt = system_prompt_val
@@ -236,24 +236,6 @@ def test_all_models_and_log(output_file="test_results.txt"):
         footer = "-" * 80 + "\n"
         file.write(footer)
         print(footer, end="")
-
-def communicate_with_FastFluxImager(user_input, model):
-    provider = FastFluxImager()
-    try:
-        images = provider.generate(user_input, model=model, amount=1, size="1_1")
-        paths = provider.save(images, dir=img_folder)
-        return paths
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
-def communicate_with_AiArta(user_input, model):
-    provider = AIArtaImager()
-    try:
-        images = provider.generate(user_input, model=model, amount=1)
-        paths = provider.save(images, dir=img_folder)
-        return paths
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 def get_Polinations_img_models():
     model_functions = {}
@@ -687,57 +669,7 @@ model_functions = {
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
 "Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),
-"Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b"),
-"AiArta_flux_img": lambda user_input: communicate_with_AiArta(user_input, "Flux"),
-"AiArta_medieval_img": lambda user_input: communicate_with_AiArta(user_input, "Medieval"),
-"AiArta_vincent_van_gogh_img": lambda user_input: communicate_with_AiArta(user_input, "Vincent Van Gogh"),
-"AiArta_f_dev_img": lambda user_input: communicate_with_AiArta(user_input, "F Dev"),
-"AiArta_low_poly_img": lambda user_input: communicate_with_AiArta(user_input, "Low Poly"),
-"AiArta_dreamshaper_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Dreamshaper-xl"),
-"AiArta_anima_pencil_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Anima-pencil-xl"),
-"AiArta_biomech_img": lambda user_input: communicate_with_AiArta(user_input, "Biomech"),
-"AiArta_trash_polka_img": lambda user_input: communicate_with_AiArta(user_input, "Trash Polka"),
-"AiArta_no_style_img": lambda user_input: communicate_with_AiArta(user_input, "No Style"),
-"AiArta_cheyenne_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Cheyenne-xl"),
-"AiArta_chicano_img": lambda user_input: communicate_with_AiArta(user_input, "Chicano"),
-"AiArta_embroidery_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Embroidery tattoo"),
-"AiArta_red_and_black_img": lambda user_input: communicate_with_AiArta(user_input, "Red and Black"),
-"AiArta_fantasy_art_img": lambda user_input: communicate_with_AiArta(user_input, "Fantasy Art"),
-"AiArta_watercolor_img": lambda user_input: communicate_with_AiArta(user_input, "Watercolor"),
-"AiArta_dotwork_img": lambda user_input: communicate_with_AiArta(user_input, "Dotwork"),
-"AiArta_old_school_colored_img": lambda user_input: communicate_with_AiArta(user_input, "Old school colored"),
-"AiArta_realistic_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Realistic tattoo"),
-"AiArta_japanese_2_img": lambda user_input: communicate_with_AiArta(user_input, "Japanese_2"),
-"AiArta_realistic_stock_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Realistic-stock-xl"),
-"AiArta_f_pro_img": lambda user_input: communicate_with_AiArta(user_input, "F Pro"),
-"AiArta_revanimated_img": lambda user_input: communicate_with_AiArta(user_input, "RevAnimated"),
-"AiArta_katayama_mix_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Katayama-mix-xl"),
-"AiArta_sdxl_l_img": lambda user_input: communicate_with_AiArta(user_input, "SDXL L"),
-"AiArta_cor_epica_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Cor-epica-xl"),
-"AiArta_anime_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Anime tattoo"),
-"AiArta_new_school_img": lambda user_input: communicate_with_AiArta(user_input, "New School"),
-"AiArta_death_metal_img": lambda user_input: communicate_with_AiArta(user_input, "Death metal"),
-"AiArta_old_school_img": lambda user_input: communicate_with_AiArta(user_input, "Old School"),
-"AiArta_juggernaut_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Juggernaut-xl"),
-"AiArta_photographic_img": lambda user_input: communicate_with_AiArta(user_input, "Photographic"),
-"AiArta_sdxl_1_0_img": lambda user_input: communicate_with_AiArta(user_input, "SDXL 1.0"),
-"AiArta_graffiti_img": lambda user_input: communicate_with_AiArta(user_input, "Graffiti"),
-"AiArta_mini_tattoo_img": lambda user_input: communicate_with_AiArta(user_input, "Mini tattoo"),
-"AiArta_surrealism_img": lambda user_input: communicate_with_AiArta(user_input, "Surrealism"),
-"AiArta_neo_traditional_img": lambda user_input: communicate_with_AiArta(user_input, "Neo-traditional"),
-"AiArta_on_limbs_black_img": lambda user_input: communicate_with_AiArta(user_input, "On limbs black"),
-"AiArta_yamers_realistic_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Yamers-realistic-xl"),
-"AiArta_pony_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Pony-xl"),
-"AiArta_playground_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Playground-xl"),
-"AiArta_anything_xl_img": lambda user_input: communicate_with_AiArta(user_input, "Anything-xl"),
-"AiArta_flame_design_img": lambda user_input: communicate_with_AiArta(user_input, "Flame design"),
-"AiArta_kawaii_img": lambda user_input: communicate_with_AiArta(user_input, "Kawaii"),
-"AiArta_cinematic_art_img": lambda user_input: communicate_with_AiArta(user_input, "Cinematic Art"),
-"AiArta_professional_img": lambda user_input: communicate_with_AiArta(user_input, "Professional"),
-"AiArta_flux_black_ink_img": lambda user_input: communicate_with_AiArta(user_input, "Flux Black Ink"),
-"FastFlux_flux_1_schnell_img": lambda user_input: communicate_with_FastFluxImager(user_input, "flux_1_schnell"),
-"FastFlux_flux_1_dev_img": lambda user_input: communicate_with_FastFluxImager(user_input, "flux_1_dev"),
-"FastFlux_sana_1_6b_img": lambda user_input: communicate_with_FastFluxImager(user_input, "sana_1_6b")
+"Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b")
 }
 
 talk_please = {
