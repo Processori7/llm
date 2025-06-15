@@ -85,7 +85,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.61"
+CURRENT_VERSION = "1.62"
 
 if system_prompt_val != None:
     prompt = system_prompt_val
@@ -131,6 +131,14 @@ if img_folder_val is not None:
     img_folder = img_folder_val
 else:
     img_folder = 'img'
+
+# Функция для удаления эмодзи (Unicode > 0xFFFF)
+def remove_emojis(text):
+    return re.sub(r'[\U00010000-\U0010ffff]', '', text)
+
+def remove_sponsor_block(text):
+    # Удаляет всё между **Sponsor и ---
+    return re.sub(r'\*\*Sponsor.*?---', '', text, flags=re.DOTALL).strip()
 
 # Функция для получения корректного пути к ресурсам
 def resource_path(relative_path):
@@ -369,16 +377,24 @@ def communicate_with_Venice(user_input, model):
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-def communicate_with_Pollinations_chat(user_input, model):
+async def communicate_with_Pollinations_chat(user_input, model):
     try:
         url = f"https://text.pollinations.ai/'{user_input}'?model={model}"
         resp = requests.get(url)
+
         if resp.ok:
-            return resp.text
+            try:
+                data = resp.json()  # Может быть JSON
+                # Если это JSON и есть 'reasoning_content', возвращаем его без эмодзи
+                return remove_emojis(data.get('reasoning_content', str(data)))  # fallback: выводим JSON как строку
+            except requests.exceptions.JSONDecodeError:
+                # Если не JSON, возвращаем обычный текст
+                text = remove_sponsor_block(resp.text)
+                return remove_emojis(text)
         else:
-            return f"{get_error_message(main_app.isTranslate)}: {resp.status_code}"
+            return f"Ошибка сервера: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return str(e)
 
 def communicate_with_FreeAIChat(user_input, model):
     try:
@@ -452,7 +468,6 @@ def communicate_with_BlackboxAI(user_input, model):
             model=model,
             messages=[{"role": "user", "content": user_input}]
         )
-
         return response.choices[0].message.content
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
