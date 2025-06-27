@@ -259,10 +259,6 @@
   },
   {
    "optionDest": "datas",
-   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/duckai;duckai/"
-  },
-  {
-   "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/STPyV8.py;."
   },
   {
@@ -272,6 +268,14 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/__pycache__/STPyV8.cpython-312.pyc;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/tiktoken;tiktoken/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/tiktoken_ext;tiktoken_ext/"
   }
  ],
  "nonPyinstallerOptions": {

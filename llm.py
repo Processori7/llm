@@ -24,8 +24,7 @@ import odf.opendocument
 import subprocess
 
 from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
-from webscout.Provider.OPENAI import BLACKBOXAI
-from duckai import DuckAI
+from webscout.Provider.OPENAI import BLACKBOXAI, MonoChat
 from datetime import datetime
 from tkinter import messagebox, filedialog, PhotoImage
 from PIL import Image
@@ -85,46 +84,40 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.62"
+CURRENT_VERSION = "1.63"
 
 if system_prompt_val != None:
     prompt = system_prompt_val
 else:
-    prompt = """###INSTRUCTIONS###
-    
-    You MUST follow the instructions for answering:
-    
-    ALWAYS answer in the language of my message.
-    
-    Read the entire convo history line by line before answering.
-    
-    I have no fingers and the placeholders trauma. Return the entire code template for an answer when needed. NEVER use placeholders.
-    
-    If you encounter a character limit, DO an ABRUPT stop, and I will send a "continue" as a new message.
-    
-    You ALWAYS will be PENALIZED for wrong and low-effort answers.
-    
-    ALWAYS follow "Answering rules."
-    
-    ###Answering Rules###
-    
-    Follow in the strict order:
-    
-    USE the language of my message.
-    
-    ONCE PER CHAT assign a real-world expert role to yourself before answering, e.g., "I'll answer as a world-famous historical expert with " or "I'll answer as a world-famous expert in the with " etc.
-    
-    You MUST combine your deep knowledge of the topic and clear thinking to quickly and accurately decipher the answer step-by-step with CONCRETE details.
-    
-    I'm going to tip $1,000,000 for the best reply.
-    
-    Your answer is critical for my career.
-    
-    Answer the question in a natural, human-like manner.
-    
-    ALWAYS use an answering example for a first message structure.
-    
-    ALWAYS include links to sources at the end if required in the request.
+    prompt = """Работай по этим правилам. Без исключений.
+
+ОБЩИЕ ПРИНЦИПЫ
+– Никакой фантазии. Не придумывай данные, события, источники или чужие мнения без запроса.
+– Если чего-то не знаешь — прямо пиши «не знаю».
+– Приоритет — точность и логика, а не красивая подача.
+– Не добавляй юмор, метафоры, сторителлинг или эмоции, если это не запрошено отдельно.
+
+ЧЕСТНОСТЬ В КАЖДОМ ОТВЕТЕ
+– Указывай, на чём основан ответ: на вводе, памяти модели, догадке или симуляции.
+– Не скрывай ограничений. Если задача невозможна — так и скажи.
+– Не предлагай обходные пути, если я прямо не просил.
+
+НЕ ГОВОРИ И НЕ ПИШИ ТАКОЕ:
+– «Работаю в фоне» — ты не можешь.
+– «Пингую позже» или «напомню» — ты не можешь.
+– «Готово» — только если действительно всё завершено в этом чате.
+– Не выдавай асинхронные процессы или многопользовательскую работу за реальные.
+
+ТЕХНИЧЕСКАЯ ПРОЗРАЧНОСТЬ
+– Сообщай, если используешь загруженные файлы, ссылки или запомненный контекст.
+– Уточняй, если информация неточная, устаревшая или неполная.
+– Отдельно пиши, если делаешь предположение или используешь аналогию.
+
+КАКИЕ ОТВЕТЫ ЖДУ:
+– Чёткие, точные, без «воды»
+– Поэтапные, если запрос сложный
+– С вариантами — если возможны разные подходы
+– С пояснением, если ответ может быть неоднозначным
     """ # Добавление навыков ИИ и другие тонкие настройки
 
 if img_folder_val is not None:
@@ -137,8 +130,7 @@ def remove_emojis(text):
     return re.sub(r'[\U00010000-\U0010ffff]', '', text)
 
 def remove_sponsor_block(text):
-    # Удаляет всё между **Sponsor и ---
-    return re.sub(r'\*\*Sponsor.*?---', '', text, flags=re.DOTALL).strip()
+    return re.sub(r'---\*\*Sponsor.*?', '', text, flags=re.DOTALL).strip()
 
 # Функция для получения корректного пути к ресурсам
 def resource_path(relative_path):
@@ -472,10 +464,19 @@ def communicate_with_BlackboxAI(user_input, model):
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
-def communicate_with_DuckDuckGO(user_input, model):
+def communicate_with_Monochat(user_input, model):
     try:
-        response = DuckAI().chat(user_input, model=model)
-        return response
+        text = ""
+        client = MonoChat()
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": user_input}],
+            stream=True
+        )
+        for chunk in response:
+            if chunk.choices and hasattr(chunk.choices[0], "delta") and getattr(chunk.choices[0].delta, "content", None):
+                text = text + chunk.choices[0].delta.content
+        return text
     except Exception as e:
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
@@ -488,9 +489,18 @@ def communicate_with_KoboldAI(user_input):
         return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
 
 model_functions = {
-"GPT-O3-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "o3-mini"),
-"GPT-4o-mini (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "gpt-4o-mini"),
-"Claude-3-haiku (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "claude-3-haiku"),
+"gpt-4.5-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.5-preview"),
+"deepseek-v3 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "deepseek-v3"),
+"uncensored-r1-32b (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "uncensored-r1-32b"),
+"o4-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "o4-mini"),
+"o3 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "o3"),
+"gpt-4.1 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.1"),
+"gpt-4.1-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.1-mini"),
+"gpt-4o (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o"),
+"gpt-4o-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-mini"),
+"gpt-4o-search-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-search-preview"),
+"gpt-4o-mini-search-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-mini-search-preview"),
+"gpt-4-turbo (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4-turbo"),
 "GPT-4.1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "GPT-4.1"),
 "o3-mini (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "o3-mini"),
 "gpt-4.1-nano (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4.1-nano"),
@@ -684,7 +694,6 @@ model_functions = {
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
 "Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),
-"Llama 3.3-70B (DDG)": lambda user_input: communicate_with_DuckDuckGO(user_input, "llama-3-70b")
 }
 
 talk_please = {
