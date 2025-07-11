@@ -14,6 +14,7 @@
 - Читать текст в слух  
 - Читать текст из файлов .txt, .docx, .xlsx, .xls, .csv, .odt, .doc и вставлять его в поле ввода  
 - Чтение параметров из файла .env (пример ниже)  
+- Запуск Telegram бота со схожим функционалом программы (файл llm.exe является сервером)
 
 # Использование
 1. Клонировать репозиторий:  
@@ -92,6 +93,7 @@ This is an application that allows you to use free services from the Webscout pa
 - Read text aloud  
 - Read text from files .txt, .docx, .xlsx, .xls, .csv, .odt, .doc and insert in input field  
 - Reading parameters from an.env file (example below)  
+- Launching a Telegram bot with similar program functionality (file llm.exe is a server)
 # Usage
 1. Clone the repository:  
 `git clone https://github.com/Processori7/llm.git `
@@ -160,4 +162,5 @@ WRITE_HISTORY=True
 MODE=light  
 DEFAULT_COLOR_THEM=green
 SYSTEM_PROMPT = "Your prompt here"  
-FREEAICHAT_API_KEY=get_your_key_here:https://freeaichatplayground.com/profile
+FREEAICHAT_API_KEY=get_your_key_here:https://freeaichatplayground.com/profile  
+TELEGRAM_BOT_TOKEN=https://t.me/BotFather

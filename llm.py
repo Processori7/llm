@@ -23,11 +23,11 @@ import odf.text
 import odf.opendocument
 import subprocess
 
-from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, JadveOpenAI, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
+from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
 from webscout.Provider.OPENAI import BLACKBOXAI, MonoChat
 from datetime import datetime
-from tkinter import messagebox, filedialog, PhotoImage
 from PIL import Image
+from tkinter import messagebox, filedialog, PhotoImage
 from packaging import version
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -59,7 +59,7 @@ font_size_val  = None
 host_val  = None
 port_val = None
 model_val  = None
-isTranslate_val  = None
+is_translate_val  = None
 img_folder_val  = None
 mode_val  = None
 def_color_them_val  = None
@@ -73,7 +73,7 @@ if os.path.exists(".env"):
     host_val = os.getenv(HOST_KEY)
     port_val = os.getenv(PORT_KEY)
     model_val = os.getenv(MODEL_KEY)
-    isTranslate_val = os.getenv(IS_TRANSLATE_KEY)
+    is_translate_val = os.getenv(IS_TRANSLATE_KEY)
     img_folder_val = os.getenv(IMG_FOLDER_KEY)
     mode_val = os.getenv(MODE_KEY)
     def_color_them_val = os.getenv(DEFAULT_COLOR_THEM_KEY)
@@ -84,7 +84,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.63"
+CURRENT_VERSION = "1.64"
 
 if system_prompt_val != None:
     prompt = system_prompt_val
@@ -238,7 +238,7 @@ def test_all_models_and_log(output_file="test_results.txt"):
         print(footer, end="")
 
 def get_Polinations_img_models():
-    model_functions = {}
+    new_models = {}
     try:
         url = "https://image.pollinations.ai/models"
         resp = requests.get(url)
@@ -248,16 +248,39 @@ def get_Polinations_img_models():
                 # Формируем ключ для словаря
                 key = f"(Polination) {name}_img"
                 # Добавляем в словарь с соответствующей лямбда-функцией
-                model_functions[key] = lambda user_input, model_name=name: gen_img(user_input, model_name)
-            return model_functions
+                new_models[key] = lambda user_input, model_name=name: gen_img(user_input, model_name)
+            
+            # Обновляем глобальный словарь
+            model_functions.update(new_models)
+            return new_models
         else:
-            return f"{get_error_message(main_app.isTranslate)}: {resp.status_code}"
+            return f"Ошибка получения моделей изображений: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"Ошибка получения моделей изображений: {str(e)}"
+
+def get_Polinations_img_models_for_bot():
+    """Получение моделей для генерации изображений для бота"""
+    new_models = {}
+    try:
+        url = "https://image.pollinations.ai/models"
+        resp = requests.get(url)
+        if resp.ok:
+            models = resp.json()  # Получаем список строк
+            for name in models:  # Проходим по каждой строке
+                # Формируем ключ для словаря
+                key = f"{name}_img (Polination)"
+                # Добавляем в словарь с соответствующей лямбда-функцией для бота
+                new_models[key] = lambda user_input, model_name=name: gen_img_for_bot(user_input, model_name)
+            
+            return new_models
+        else:
+            return f"Ошибка получения моделей изображений: {resp.status_code}"
+    except Exception as e:
+        return f"Ошибка получения моделей изображений: {str(e)}"
 
 #Получаю все текстовые модели Polinations
 def get_Polinations_chat_models():
-    model_functions = {}  # Инициализация словаря
+    new_models = {}  # Инициализация словаря
     try:
         url = "https://text.pollinations.ai/models"
         resp = requests.get(url)
@@ -268,15 +291,19 @@ def get_Polinations_chat_models():
                 if "description" not in model:
                     continue  # Пропускаем модели без описания
                 model_description = model["description"]
+                model_name = model["name"]
                 key = f"{model_description} (Polinations)"
                 # Фиксируем текущее значение model в замыкании
-                model_functions[key] = lambda user_input, model_name=model: communicate_with_Pollinations_chat(
+                new_models[key] = lambda user_input, model_name=model_name: communicate_with_Pollinations_chat(
                     user_input, model_name)
-            return model_functions
+            
+            # Обновляем глобальный словарь
+            model_functions.update(new_models)
+            return new_models
         else:
-            return f"{get_error_message(main_app.isTranslate)}: {resp.status_code}"
+            return f"Ошибка получения текстовых моделей: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"Ошибка получения текстовых моделей: {str(e)}"
 
 def communicate_with_Toolbaz(user_input, model):
     try:
@@ -286,7 +313,7 @@ def communicate_with_Toolbaz(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_Scira(user_input, model):
     try:
@@ -296,7 +323,7 @@ def communicate_with_Scira(user_input, model):
         response = ai.search(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_ExaChat(user_input, model):
     try:
@@ -306,7 +333,7 @@ def communicate_with_ExaChat(user_input, model):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_PerplexityLabs(user_input, model):
     try:
@@ -316,17 +343,7 @@ def communicate_with_PerplexityLabs(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
-
-def communicate_with_JadveOpenAI(user_input, model):
-    try:
-        ai = JadveOpenAI()
-        ai.model = model
-        ai.system_prompt = prompt
-        response = ai.chat(user_input, stream=False)
-        return response
-    except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_WiseCat(user_input, model):
     try:
@@ -336,7 +353,7 @@ def communicate_with_WiseCat(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_AllenAI(user_input, model):
     try:
@@ -346,7 +363,7 @@ def communicate_with_AllenAI(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_HeckAI(user_input, model):
     try:
@@ -357,7 +374,7 @@ def communicate_with_HeckAI(user_input, model):
         response = ai.fix_encoding(response)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_Venice(user_input, model):
     try:
@@ -367,9 +384,9 @@ def communicate_with_Venice(user_input, model):
         response = ai.chat(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
-async def communicate_with_Pollinations_chat(user_input, model):
+def communicate_with_Pollinations_chat(user_input, model):
     try:
         url = f"https://text.pollinations.ai/'{user_input}'?model={model}"
         resp = requests.get(url)
@@ -396,7 +413,7 @@ def communicate_with_FreeAIChat(user_input, model):
         response = ai.fix_encoding(response)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_LLMChat(user_input, model):
     try:
@@ -409,7 +426,7 @@ def communicate_with_LLMChat(user_input, model):
 
         return response_text
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_Netwrck(user_input, model):
     try:
@@ -422,7 +439,7 @@ def communicate_with_Netwrck(user_input, model):
 
         return full_response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_TurboSeek(user_input):
     try:
@@ -435,7 +452,7 @@ def communicate_with_TurboSeek(user_input):
 
         return full_response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_Marcus(user_input):
     try:
@@ -443,7 +460,7 @@ def communicate_with_Marcus(user_input):
         response = ai.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_Felo(user_input):
     try:
@@ -451,7 +468,7 @@ def communicate_with_Felo(user_input):
         response = ai.search(user_input, stream=False)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_BlackboxAI(user_input, model):
     try:
@@ -462,7 +479,7 @@ def communicate_with_BlackboxAI(user_input, model):
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_Monochat(user_input, model):
     try:
@@ -478,7 +495,7 @@ def communicate_with_Monochat(user_input, model):
                 text = text + chunk.choices[0].delta.content
         return text
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 def communicate_with_KoboldAI(user_input):
     try:
@@ -486,71 +503,71 @@ def communicate_with_KoboldAI(user_input):
         response = koboldai.chat(user_input)
         return response
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
 
 model_functions = {
-"gpt-4.5-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.5-preview"),
-"deepseek-v3 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "deepseek-v3"),
-"uncensored-r1-32b (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "uncensored-r1-32b"),
-"o4-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "o4-mini"),
-"o3 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "o3"),
-"gpt-4.1 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.1"),
-"gpt-4.1-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.1-mini"),
-"gpt-4o (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o"),
-"gpt-4o-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-mini"),
-"gpt-4o-search-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-search-preview"),
-"gpt-4o-mini-search-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-mini-search-preview"),
-"gpt-4-turbo (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4-turbo"),
-"GPT-4.1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "GPT-4.1"),
-"o3-mini (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "o3-mini"),
-"gpt-4.1-nano (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4.1-nano"),
-"Claude-sonnet-3.7 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Claude-sonnet-3.7"),
-"Claude-sonnet-3.5 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Claude-sonnet-3.5"),
-"DeepSeek-R1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepSeek-R1"),
-"Mistral-Small-24B-Instruct-2501 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral-Small-24B-Instruct-2501"),
-"Deepcoder 14B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Deepcoder 14B Preview"),
-"DeepHermes 3 Llama 3 8B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepHermes 3 Llama 3 8B Preview"),
-"DeepSeek R1 Zero (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepSeek R1 Zero"),
-"Dolphin3.0 Mistral 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Dolphin3.0 Mistral 24B"),
-"Dolphin3.0 R1 Mistral 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Dolphin3.0 R1 Mistral 24B"),
-"Flash 3 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Flash 3"),
-"Gemini 2.0 Flash Experimental (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemini 2.0 Flash Experimental"),
-"Gemma 2 9B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 2 9B"),
-"Gemma 3 12B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 12B"),
-"Gemma 3 1B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 1B"),
-"Gemma 3 27B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 27B"),
-"Gemma 3 4B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 4B"),
-"Kimi VL A3B Thinking (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Kimi VL A3B Thinking"),
-"Llama 3.1 8B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.1 8B Instruct"),
-"Llama 3.1 Nemotron Ultra 253B v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.1 Nemotron Ultra 253B v1"),
-"Llama 3.2 11B Vision Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 11B Vision Instruct"),
-"Llama 3.2 1B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 1B Instruct"),
-"Llama 3.2 3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 3B Instruct"),
-"Llama 3.3 70B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.3 70B Instruct"),
-"Llama 3.3 Nemotron Super 49B v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.3 Nemotron Super 49B v1"),
-"Llama 4 Maverick (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 4 Maverick"),
-"Llama 4 Scout (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 4 Scout"),
-"Mistral 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral 7B Instruct"),
-"Mistral Nemo (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Nemo"),
-"Mistral Small 3 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Small 3"),
-"Mistral Small 3.1 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Small 3.1 24B"),
-"Molmo 7B D (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Molmo 7B D"),
-"Moonlight 16B A3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Moonlight 16B A3B Instruct"),
-"Qwen2.5 72B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 72B Instruct"),
-"Qwen2.5 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 7B Instruct"),
-"Qwen2.5 Coder 32B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 Coder 32B Instruct"),
-"Qwen2.5 VL 32B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 32B Instruct"),
-"Qwen2.5 VL 3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 3B Instruct"),
-"Qwen2.5 VL 72B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 72B Instruct"),
-"Qwen2.5-VL 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5-VL 7B Instruct"),
-"Qwerky 72B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwerky 72B"),
-"QwQ 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B"),
-"QwQ 32B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B Preview"),
-"QwQ 32B RpR v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B RpR v1"),
-"R1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1"),
-"R1 Distill Llama 70B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Llama 70B"),
-"R1 Distill Qwen 14B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 14B"),
-"R1 Distill Qwen 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 32B"),
+# "gpt-4.5-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.5-preview"),
+# "deepseek-v3 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "deepseek-v3"),
+# "uncensored-r1-32b (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "uncensored-r1-32b"),
+# "o4-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "o4-mini"),
+# "o3 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "o3"),
+# "gpt-4.1 (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.1"),
+# "gpt-4.1-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4.1-mini"),
+# "gpt-4o (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o"),
+# "gpt-4o-mini (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-mini"),
+# "gpt-4o-search-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-search-preview"),
+# "gpt-4o-mini-search-preview (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4o-mini-search-preview"),
+# "gpt-4-turbo (MonoChat)": lambda user_input: communicate_with_Monochat(user_input, "gpt-4-turbo"),
+# "GPT-4.1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "GPT-4.1"),
+# "o3-mini (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "o3-mini"),
+# "gpt-4.1-nano (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "gpt-4.1-nano"),
+# "Claude-sonnet-3.7 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Claude-sonnet-3.7"),
+# "Claude-sonnet-3.5 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Claude-sonnet-3.5"),
+# "DeepSeek-R1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepSeek-R1"),
+# "Mistral-Small-24B-Instruct-2501 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral-Small-24B-Instruct-2501"),
+# "Deepcoder 14B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Deepcoder 14B Preview"),
+# "DeepHermes 3 Llama 3 8B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepHermes 3 Llama 3 8B Preview"),
+# "DeepSeek R1 Zero (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "DeepSeek R1 Zero"),
+# "Dolphin3.0 Mistral 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Dolphin3.0 Mistral 24B"),
+# "Dolphin3.0 R1 Mistral 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Dolphin3.0 R1 Mistral 24B"),
+# "Flash 3 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Flash 3"),
+# "Gemini 2.0 Flash Experimental (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemini 2.0 Flash Experimental"),
+# "Gemma 2 9B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 2 9B"),
+# "Gemma 3 12B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 12B"),
+# "Gemma 3 1B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 1B"),
+# "Gemma 3 27B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 27B"),
+# "Gemma 3 4B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Gemma 3 4B"),
+# "Kimi VL A3B Thinking (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Kimi VL A3B Thinking"),
+# "Llama 3.1 8B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.1 8B Instruct"),
+# "Llama 3.1 Nemotron Ultra 253B v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.1 Nemotron Ultra 253B v1"),
+# "Llama 3.2 11B Vision Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 11B Vision Instruct"),
+# "Llama 3.2 1B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 1B Instruct"),
+# "Llama 3.2 3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.2 3B Instruct"),
+# "Llama 3.3 70B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.3 70B Instruct"),
+# "Llama 3.3 Nemotron Super 49B v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 3.3 Nemotron Super 49B v1"),
+# "Llama 4 Maverick (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 4 Maverick"),
+# "Llama 4 Scout (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Llama 4 Scout"),
+# "Mistral 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral 7B Instruct"),
+# "Mistral Nemo (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Nemo"),
+# "Mistral Small 3 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Small 3"),
+# "Mistral Small 3.1 24B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Mistral Small 3.1 24B"),
+# "Molmo 7B D (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Molmo 7B D"),
+# "Moonlight 16B A3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Moonlight 16B A3B Instruct"),
+# "Qwen2.5 72B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 72B Instruct"),
+# "Qwen2.5 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 7B Instruct"),
+# "Qwen2.5 Coder 32B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 Coder 32B Instruct"),
+# "Qwen2.5 VL 32B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 32B Instruct"),
+# "Qwen2.5 VL 3B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 3B Instruct"),
+# "Qwen2.5 VL 72B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5 VL 72B Instruct"),
+# "Qwen2.5-VL 7B Instruct (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwen2.5-VL 7B Instruct"),
+# "Qwerky 72B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "Qwerky 72B"),
+# "QwQ 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B"),
+# "QwQ 32B Preview (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B Preview"),
+# "QwQ 32B RpR v1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "QwQ 32B RpR v1"),
+# "R1 (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1"),
+# "R1 Distill Llama 70B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Llama 70B"),
+# "R1 Distill Qwen 14B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 14B"),
+# "R1 Distill Qwen 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 32B"),
 "llama-3.1-70b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.1-70b-instruct"),
 "llama-3.1-8b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.1-8b-instruct"),
 "llama-3.2-3b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.2-3b-instruct"),
@@ -560,43 +577,40 @@ model_functions = {
 "meta/llama-4-scout-17b-16e-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-4-scout-17b-16e-instruct"),
 "mistralai/mistral-small-3.1-24b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/mistralai/mistral-small-3.1-24b-instruct"),
 "google/gemma-3-12b-it (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/google/gemma-3-12b-it"),
-"llama-3-lumimaid-8b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "neversleep/llama-3-lumimaid-8b:extended"),
-"llama-3.1-lumimaid-8b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "lumimaid"),
-"grok-2 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "x-ai/grok-2"),
-"claude-3.5-sonnet (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "anthropic/claude-3-7-sonnet-20250219"),
-"l3-euryale-70b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "sao10k/l3-euryale-70b"),
+"valkyrie-49b-v1 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "thedrummer/valkyrie-49b-v1"),
+"l3-euryale-70b": lambda user_input: communicate_with_Netwrck(user_input, "sao10k/l3-euryale-70b"),
+"deepseek-chat (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "deepseek/deepseek-chat"),
+"deepseek-r1 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "deepseek/deepseek-r1"),
 "gpt-4.1-mini (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "openai/gpt-4.1-mini"),
 "mythomax-l2-13b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "gryphe/mythomax-l2-13b"),
 "gemini-pro-1.5 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "google/gemini-pro-1.5"),
 "gemini-2.5-flash-preview-04-17 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "google/gemini-2.5-flash-preview-04-17"),
 "llama-3.1-nemotron-70b (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "nvidia/llama-3.1-nemotron-70b-instruct"),
-"deepseek-r1 (Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "deepseek/deepseek-r1"),
-"deepseek-chat(Netwrck)": lambda user_input: communicate_with_Netwrck(user_input, "deepseek/deepseek-chat"),
-"exaanswer (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "exaanswer"),
-"gemini-2.0-flash (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemini-2.0-flash"),
-"gemini-2.0-flash-thinking-exp-01-21 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-flash-thinking-exp-01-21"),
-"gemini-2.5-pro-exp-03-25 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.5-pro-exp-03-25"),
-"gemini-2.0-pro-exp-02-05 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-pro-exp-02-05"),
-"mistralai/mistral-small-3.1-24b-instruct:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"mistralai/mistral-small-3.1-24b-instruct:free"),
-"deepseek/deepseek-r1:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek/deepseek-r1:free"),
-"deepseek/deepseek-chat-v3-0324:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek/deepseek-chat-v3-0324:free"),
-"google/gemma-3-27b-it:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"google/gemma-3-27b-it:free"),
-"deepseek-r1-distill-llama-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek-r1-distill-llama-70b"),
-"deepseek-r1-distill-qwen-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek-r1-distill-qwen-32b"),
-"gemma2-9b-it (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemma2-9b-it"),
-"llama-3.1-8b-instant (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.1-8b-instant"),
-"llama-3.2-1b-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.2-1b-preview"),
-"llama-3.2-3b-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.2-3b-preview"),
-"llama-3.2-90b-vision-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"llama-3.2-90b-vision-preview"),
-"llama-3.3-70b-specdec (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b-specdec"),
-"llama-3.3-70b-versatile (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"llama-3.3-70b-versatile"),
-"llama3-70b-8192 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3-70b-8192"),
-"llama3-8b-8192 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3-8b-8192"),
-"qwen-2.5-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-2.5-32b"),
-"qwen-2.5-coder-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-2.5-coder-32b"),
-"qwen-qwq-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-qwq-32b"),
-"llama3.1-8b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3.1-8b"),
-"llama-3.3-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b"),
+# "exaanswer (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "exaanswer"),
+# "gemini-2.0-flash (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemini-2.0-flash"),
+# "gemini-2.0-flash-thinking-exp-01-21 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-flash-thinking-exp-01-21"),
+# "gemini-2.5-pro-exp-03-25 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.5-pro-exp-03-25"),
+# "gemini-2.0-pro-exp-02-05 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"gemini-2.0-pro-exp-02-05"),
+# "mistralai/mistral-small-3.1-24b-instruct:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"mistralai/mistral-small-3.1-24b-instruct:free"),
+# "deepseek/deepseek-r1:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek/deepseek-r1:free"),
+# "deepseek/deepseek-chat-v3-0324:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek/deepseek-chat-v3-0324:free"),
+# "google/gemma-3-27b-it:free (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"google/gemma-3-27b-it:free"),
+# "deepseek-r1-distill-llama-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek-r1-distill-llama-70b"),
+# "deepseek-r1-distill-qwen-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"deepseek-r1-distill-qwen-32b"),
+# "gemma2-9b-it (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "gemma2-9b-it"),
+# "llama-3.1-8b-instant (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.1-8b-instant"),
+# "llama-3.2-1b-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.2-1b-preview"),
+# "llama-3.2-3b-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.2-3b-preview"),
+# "llama-3.2-90b-vision-preview (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"llama-3.2-90b-vision-preview"),
+# "llama-3.3-70b-specdec (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b-specdec"),
+# "llama-3.3-70b-versatile (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input,"llama-3.3-70b-versatile"),
+# "llama3-70b-8192 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3-70b-8192"),
+# "llama3-8b-8192 (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3-8b-8192"),
+# "qwen-2.5-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-2.5-32b"),
+# "qwen-2.5-coder-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-2.5-coder-32b"),
+# "qwen-qwq-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-qwq-32b"),
+# "llama3.1-8b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3.1-8b"),
+# "llama-3.3-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b"),
 "gemini-2.5-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.5-flash"),
 "gemini-2.0-flash-thinking (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input,"gemini-2.0-flash-thinking"),
 "gemini-2.0-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.0-flash"),
@@ -623,64 +637,43 @@ model_functions = {
 "sonar (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar"),
 "sonar-reasoning-pro (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar-reasoning-pro"),
 "sonar-reasoning (PerplexityLabs)": lambda user_input: communicate_with_PerplexityLabs(user_input, "sonar-reasoning"),
-"gpt-4o-mini (JadveOpenAI)": lambda user_input: communicate_with_JadveOpenAI(user_input, "gpt-4o-mini"),
 "chat-model-small (WiseCat)": lambda user_input: communicate_with_WiseCat(user_input, "chat-model-small"),
 "chat-model-large (WiseCat)": lambda user_input: communicate_with_WiseCat(user_input, "chat-model-large"),
 "chat-model-reasoning (WiseCat)": lambda user_input: communicate_with_WiseCat(user_input, "chat-model-reasoning"),
 "tulu3-405b (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "tulu3-405b"),
-"OLMo-2-1124-13B-Instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "OLMo-2-1124-13B-Instruct"),
-"Llama-3-1-Tulu-3-8B (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "Llama-3-1-Tulu-3-8B"),
-"Llama-3-1-Tulu-3-70B (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "Llama-3-1-Tulu-3-70B"),
 "olmo-2-0325-32b-instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "olmo-2-0325-32b-instruct"),
-"OLMoE-1B-7B-0924-Instruct (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "OLMoE-1B-7B-0924-Instruct"),
-"tulu-3-1-8b (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "tulu-3-1-8b"),
-"olmoe-0125 (AllenAI)": lambda user_input: communicate_with_AllenAI(user_input, "olmoe-0125"),
-"google/gemini-2.0-flash-001 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "google/gemini-2.0-flash-001"),
-"deepseek/deepseek-chat (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-chat"),
-"deepseek/deepseek-r1 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-r1"),
-"openai/gpt-4o-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4o-mini"),
-"openai/gpt-4.1-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4.1-mini"),
-"x-ai/grok-3-mini-beta (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "x-ai/grok-3-mini-beta"),
-"meta-llama/llama-4-scout (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "meta-llama/llama-4-scout"),
-"Mistral Nemo (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mistral Nemo"),
-"Mistral Large (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mistral Large"),
-"Mixtral 8x22B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Mixtral 8x22B"),
-"Gemini 2.0 Flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.0 Flash"),
-"Gemini 1.5 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 1.5 Pro"),
-"Gemini 1.5 Flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 1.5 Flash"),
-"Gemini 2.0 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.0 Pro"),
-"Gemini 2.5 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.5 Pro"),
-"Deepseek R1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek R1"),
-"Deepseek R1 Fast (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek R1 Fast"),
-"Deepseek V3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek V3"),
-"Deepseek v3 0324 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek v3 0324"),
+"gemini-2.0-flash-001 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "google/gemini-2.0-flash-001"),
+"deepseek-chat (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-chat"),
+"deepseek-r1 (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "deepseek/deepseek-r1"),
+"gpt-4o-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4o-mini"),
+"gpt-4.1-mini (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "openai/gpt-4.1-mini"),
+"grok-3-mini-beta (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "x-ai/grok-3-mini-beta"),
+"llama-4-scout (HeckAI)": lambda user_input: communicate_with_HeckAI(user_input, "meta-llama/llama-4-scout"),
+"Deepseek R1 Latest (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek R1 Latest"),
 "GPT 4o (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o"),
-"GPT 4.5 Preview (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4.5 Preview"),
-"GPT 4o Latest (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o Latest"),
-"GPT 4o mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o mini"),
-"GPT 4o Search Preview (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o Search Preview"),
-"O1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O1"),
-"O1 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O1 Mini"),
-"O3 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 Mini"),
-"O3 Mini High (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 Mini High"),
-"O3 Mini Low (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 Mini Low"),
-"Llama 3.1 405B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.1 405B"),
-"Llama 3.1 70B Fast (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.1 70B Fast"),
-"Llama 3.3 70B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.3 70B"),
-"Llama 3.2 90B Vision (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 3.2 90B Vision"),
-"Claude 3.5 haiku (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 haiku"),
-"Claude 3.5 sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.5 sonnet"),  # Исправлено
-"Claude 3.7 Sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet"),
-"Claude 3.7 Sonnet (Thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet (Thinking)"),
-"Qwen Max (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Max"),
-"Qwen Plus (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Plus"),
-"Qwen Turbo (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen Turbo"),
-"QwQ 32B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "QwQ 32B"),
+"O4 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O4 Mini"),
+"O4 Mini High (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O4 Mini High"),
 "QwQ Plus (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "QwQ Plus"),
-"Grok 2 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 2"),
-"Grok 3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 3"),
-"Llama 4 Scout (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 4 Scout"),
 "Llama 4 Maverick (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 4 Maverick"),
+"Grok 3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 3"),
+"GPT 4o mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4o mini"),
+"Deepseek v3 0324 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Deepseek v3 0324"),
+"Grok 3 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Grok 3 Mini"),
+"GPT 4.1 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4.1"),
+"GPT 4.1 Mini (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "GPT 4.1 Mini"),
+"Claude 3.7 Sonnet (Thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 3.7 Sonnet (Thinking)"),
+"Llama 4 Scout (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Llama 4 Scout"),
+"O3 High (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3 High"),
+"Gemini 2.5 Pro (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.5 Pro"),
+"Magistral Medium 2506 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Magistral Medium 2506"),
+"O3 (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "O3"),
+"Gemini 2.5 Flash (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Gemini 2.5 Flash"),
+"Qwen 3 235B A22B (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Qwen 3 235B A22B"),
+"Claude 4 Sonnet (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 4 Sonnet"),
+"Claude 4 Sonnet (Thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 4 Sonnet (Thinking)"),
+"Claude 4 Opus (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 4 Opus"),
+"Claude 4 Opus (Thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Claude 4 Opus (Thinking)"),
+"Gemini 2.5 Pro (thinking) (FreeAiChat)": lambda user_input: communicate_with_FreeAIChat(user_input, "Google: Gemini 2.5 Pro (thinking)"),
 "(Venice) Mistral-31-24b": lambda user_input: communicate_with_Venice(user_input, "mistral-31-24b"),
 "(Venice) llama-3.2-3b-akash_Web": lambda user_input: communicate_with_Venice(user_input, "llama-3.2-3b-akash"),
 "(Venice) qwen2dot5-coder-32b_Web": lambda user_input: communicate_with_Venice(user_input, "qwen2dot5-coder-32b"),
@@ -693,7 +686,6 @@ model_functions = {
 "KoboldAI": communicate_with_KoboldAI,
 "TurboSeek_Web":communicate_with_TurboSeek,
 "Marcus_Web":communicate_with_Marcus,
-"Searchgpt_Web(Polinations)": lambda user_input: communicate_with_Pollinations_chat(user_input, "searchgpt"),
 }
 
 talk_please = {
@@ -717,8 +709,8 @@ error_messages = {
 }
 
 tesseract_not_found_messages = {
-    "ru":"tesseract.exe не найден, нажмите ок для скачивания и сохраните его в одной директории(папке) с файлом llm.exe",
-    "en":"tesseract.exe not found, click OK to download and save it in the same directory as the llm.exe file"
+    "ru":"Tesseract OCR не найден. Нажмите 'Да' для открытия ссылки на скачивание.\n\nВы можете:\n1. Установить Tesseract через стандартный инсталлятор\n2. Поместить tesseract.exe в папку с программой\n3. Добавить Tesseract в PATH",
+    "en":"Tesseract OCR not found. Click 'Yes' to open download link.\n\nYou can:\n1. Install Tesseract via standard installer\n2. Place tesseract.exe in the program folder\n3. Add Tesseract to PATH"
 }
 
 error_gen_img_messages = {
@@ -756,46 +748,51 @@ API_message={
     "en":"API Mode enabled, a link will open soon in the browser"
 }
 
-def get_API_message(isTranslate):
-    return API_message["ru" if not isTranslate else "en"]
+def get_API_message(is_translate):
+    return API_message["ru" if not is_translate else "en"]
 
-def get_micro_error_message(isTranslate):
-    return micro_error_message["ru" if not isTranslate else "en"]
+def get_micro_error_message(is_translate):
+    return micro_error_message["ru" if not is_translate else "en"]
 
-def get_talk_please(isTranslate):
-    return talk_please["ru" if not isTranslate else "en"]
+def get_talk_please(is_translate):
+    return talk_please["ru" if not is_translate else "en"]
 
-def get_text_recognition_error_message(isTranslate):
-    return text_recognition_error_messages["ru" if not isTranslate else "en"]
+def get_text_recognition_error_message(is_translate):
+    return text_recognition_error_messages["ru" if not is_translate else "en"]
 
-def get_image_load_error_message(isTranslate):
-    return image_load_error_messages["ru" if not isTranslate else "en"]
+def get_image_load_error_message(is_translate):
+    return image_load_error_messages["ru" if not is_translate else "en"]
 
-def get_no_text_recognized_message(isTranslate):
-    return no_text_recognized_messages["ru" if not isTranslate else "en"]
+def get_no_text_recognized_message(is_translate):
+    return no_text_recognized_messages["ru" if not is_translate else "en"]
 
-def get_select_image_message_errors(isTranslate):
-    return select_image_message_errors["ru" if not isTranslate else "en"]
+def get_select_image_message_errors(is_translate):
+    return select_image_message_errors["ru" if not is_translate else "en"]
 
-def get_image_title_errors(isTranslate):
-    return select_image_title_errors["ru" if not isTranslate else "en"]
+def get_image_title_errors(is_translate):
+    return select_image_title_errors["ru" if not is_translate else "en"]
 
-def get_tesseract_not_found_messages(isTranslate):
-    return tesseract_not_found_messages["ru" if not isTranslate else "en"]
+def get_tesseract_not_found_messages(is_translate):
+    return tesseract_not_found_messages["ru" if not is_translate else "en"]
 
-def get_save_img_messages(isTranslate):
-    return save_img_messages["ru" if not isTranslate else "en"]
+def get_save_img_messages(is_translate):
+    return save_img_messages["ru" if not is_translate else "en"]
 
-def get_error_message(isTranslate):
-    return error_messages["ru" if not isTranslate else "en"]
+def get_error_message(is_translate):
+    return error_messages["ru" if not is_translate else "en"]
 
-def get_error_gen_img_messages(isTranslate):
-    return error_gen_img_messages["ru" if not isTranslate else "en"]
+def get_error_gen_img_messages(is_translate):
+    return error_gen_img_messages["ru" if not is_translate else "en"]
 
 def gen_img(user_input, model):
+    """Генерация изображения для GUI приложения (сохраняет локально)"""
     try:
+        # Кодируем промпт для URL
+        import urllib.parse
+        encoded_prompt = urllib.parse.quote(user_input)
+        
         # Формируем URL для запроса
-        url = f"https://image.pollinations.ai/prompt/{user_input}?model={model}"
+        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?model={model}"
         resp = requests.get(url)
 
         if resp.ok:
@@ -811,11 +808,33 @@ def gen_img(user_input, model):
                 img_file.write(resp.content)  # Сохраняем содержимое ответа как изображение
                 saved_images.append(image_path)  # Добавляем путь к сохраненному изображению в список
 
-            return f"{get_save_img_messages(main_app.isTranslate)}{', '.join(saved_images)}"
+            is_translate = main_app.is_translate if main_app else False
+            return f"{get_save_img_messages(is_translate)}{', '.join(saved_images)}"
         else:
-            return f"{get_error_gen_img_messages(main_app.isTranslate)}: {resp.status_code}"
+            is_translate = main_app.is_translate if main_app else False
+            return f"{get_error_gen_img_messages(is_translate)}: {resp.status_code}"
     except Exception as e:
-        return f"{get_error_message(main_app.isTranslate)}: {str(e)}"
+        is_translate = main_app.is_translate if main_app else False
+        return f"{get_error_message(is_translate)}: {str(e)}"
+
+def gen_img_for_bot(user_input, model):
+    """Генерация изображения для бота (возвращает URL)"""
+    try:
+        # Кодируем промпт для URL
+        import urllib.parse
+        encoded_prompt = urllib.parse.quote(user_input)
+        
+        # Формируем URL для запроса
+        url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?model={model}"
+        resp = requests.get(url)
+
+        if resp.ok:
+            # Для бота возвращаем URL изображения
+            return url
+        else:
+            return f"Ошибка генерации изображения: {resp.status_code}"
+    except Exception as e:
+        return f"Ошибка: {str(e)}"
 
 def get_bool_val(val):
     if val in ["True", "true"]:
@@ -848,10 +867,10 @@ class ChatApp(ctk.CTk):
             self.is_listening = False  # Флаг для отслеживания состояния прослушивания
             self.stop_listening = None  # Объект для остановки прослушивания
 
-            if isTranslate_val is not None:
-                self.isTranslate = get_bool_val(isTranslate_val)
+            if is_translate_val is not None:
+                self.is_translate = get_bool_val(is_translate_val)
             else:
-                self.isTranslate = False
+                self.is_translate = False
 
             self.server_process = None
             self.uvicorn_server = None
@@ -859,7 +878,11 @@ class ChatApp(ctk.CTk):
             self.tray_icon = None
             self.tray_icon_thread = None  # Добавляем явную инициализацию
             self.local_ip = self.get_local_ip()
-            if self.isTranslate:
+            
+            # Инициализация переменных для Telegram бота
+            self.telegram_bot = None
+            self.bot_running = False
+            if self.is_translate:
                 self.title("AI Chat")
             else:
                 self.title("Чат с ИИ")
@@ -936,7 +959,7 @@ class ChatApp(ctk.CTk):
             self.category_label.pack(side="left", padx=6)
 
             self.values=[]
-            if self.isTranslate:
+            if self.is_translate:
                 self.values = ["All", "Text", "Img", "Photo Analyze", "Web"]
             else:
                 self.values = ["Все", "Текст", "Фото", "Анализ фото", "Поиск в Интернете"]
@@ -1042,6 +1065,10 @@ class ChatApp(ctk.CTk):
             self.api_mode_button = ctk.CTkButton(self.button_frame, text="API Mode", command=self.toggle_api_mode,
                                                  font=("Consolas", font_size), text_color="white",
                                                  height=button_height)
+            
+            self.telegram_bot_button = ctk.CTkButton(self.button_frame, text="Telegram Bot", command=self.toggle_telegram_bot,
+                                                     font=("Consolas", font_size), text_color="white",
+                                                     height=button_height)
 
             self.img_reco_button = ctk.CTkButton(self.button_frame, text="Распознать текст",
                                                  command=self.recognize_text,
@@ -1065,6 +1092,8 @@ class ChatApp(ctk.CTk):
                 self.lang_button.pack(side="top", padx=5, pady=10)
 
                 self.api_mode_button.pack(side="top", padx=5, pady=10)
+                
+                self.telegram_bot_button.pack(side="top", padx=5, pady=10)
 
             self.exit_button = ctk.CTkButton(self.button_frame, text="Выход", command=self.on_exit,
                                              font=("Consolas", font_size), text_color="white", height=button_height)
@@ -1093,7 +1122,7 @@ class ChatApp(ctk.CTk):
             # Привязываем события фокуса к виджетам
             self.chat_history.bind("<FocusIn>", self.set_active_widget)
             self.input_entry.bind("<FocusIn>", self.set_active_widget)
-            if get_bool_val(isTranslate_val):
+            if get_bool_val(is_translate_val):
                 self.toggle_lang()
 
         except Exception as e:
@@ -1120,9 +1149,6 @@ class ChatApp(ctk.CTk):
         else:
             image_path = path
 
-        if not image_path:
-            return
-
         try:
             pil_img = Image.open(image_path)
         except Exception as e:
@@ -1139,37 +1165,39 @@ class ChatApp(ctk.CTk):
 
         # Меню "Файл"
         file_menu = tk.Menu(menubar, tearoff=0)
-        if not self.isTranslate:
+        if not self.is_translate:
             file_menu.add_command(label="Открыть файл", command=self.read_file)
             file_menu.add_command(label="Выход", command=self.on_exit)
         else:
             file_menu.add_command(label="Open file", command=self.read_file)
             file_menu.add_command(label="Exit", command=self.on_exit)
-        menubar.add_cascade(label="Файл" if not self.isTranslate else "File", menu=file_menu)
+        menubar.add_cascade(label="Файл" if not self.is_translate else "File", menu=file_menu)
 
         # Меню "Настройки"
         settings_menu = tk.Menu(menubar, tearoff=0)
-        if not self.isTranslate:
+        if not self.is_translate:
             settings_menu.add_command(label="Переключить тему", command=self.toggle_theme)
             settings_menu.add_command(label="English", command=self.toggle_lang)
             settings_menu.add_command(label="Вести историю", command=self.toggle_history)
             settings_menu.add_command(label="Прочитать текст", command=self.toggle_read_text)
             settings_menu.add_command(label="API Mode", command=self.toggle_api_mode)
+            settings_menu.add_command(label="Telegram Bot", command=self.toggle_telegram_bot)
         else:
             settings_menu.add_command(label="Toggle Theme", command=self.toggle_theme)
             settings_menu.add_command(label="Russian", command=self.toggle_lang)
             settings_menu.add_command(label="Keep History", command=self.toggle_history)
             settings_menu.add_command(label="Read Text", command=self.toggle_read_text)
             settings_menu.add_command(label="API Mode", command=self.toggle_api_mode)
-        menubar.add_cascade(label="Настройки" if not self.isTranslate else "Settings", menu=settings_menu)
+            settings_menu.add_command(label="Telegram Bot", command=self.toggle_telegram_bot)
+        menubar.add_cascade(label="Настройки" if not self.is_translate else "Settings", menu=settings_menu)
 
         # Меню "Инструменты"
         tools_menu = tk.Menu(menubar, tearoff=0)
-        if not self.isTranslate:
+        if not self.is_translate:
             tools_menu.add_command(label="Распознать текст", command=self.recognize_text)
         else:
             tools_menu.add_command(label="Recognize Text", command=self.recognize_text)
-        menubar.add_cascade(label="Инструменты" if not self.isTranslate else "Tools", menu=tools_menu)
+        menubar.add_cascade(label="Инструменты" if not self.is_translate else "Tools", menu=tools_menu)
 
         self.config(menu=menubar)
 
@@ -1278,7 +1306,7 @@ class ChatApp(ctk.CTk):
         self.server_process = threading.Thread(target=run_fastapi_app, daemon=True)
         self.server_process.start()
         server_url = f"http://{host_val}:{port}/chat" if host_val else f"http://{self.local_ip}:{port}/chat"
-        messagebox.showwarning("Server started", get_API_message(self.isTranslate))
+        messagebox.showwarning("Server started", get_API_message(self.is_translate))
         webbrowser.open(server_url)
         self.api_running = True
         self.api_mode_button.configure(text="Stop API Mode")
@@ -1294,6 +1322,58 @@ class ChatApp(ctk.CTk):
         sys.stderr = sys.__stderr__
         os.remove('server_log.txt')
         self.api_mode_button.configure(text="API Mode")
+        
+    def toggle_telegram_bot(self):
+        if self.bot_running:
+            self.stop_telegram_bot()
+        else:
+            self.start_telegram_bot()
+    
+    def start_telegram_bot(self):
+        try:
+            from tg_bot import TelegramBot
+
+            # Создаем экземпляр бота
+            self.telegram_bot = TelegramBot(model_functions)
+            
+            # Запускаем бота
+            self.telegram_bot.start_bot()
+            
+            self.bot_running = True
+            self.telegram_bot_button.configure(text="Stop Telegram Bot")
+            
+            # Показываем сообщение об успешном запуске
+            if self.is_translate:
+                messagebox.showinfo("Telegram Bot", "Telegram bot started successfully!")
+            else:
+                messagebox.showinfo("Telegram Bot", "Telegram бот успешно запущен!")
+                
+        except Exception as e:
+            error_msg = f"Ошибка запуска Telegram бота: {str(e)}"
+            if self.is_translate:
+                error_msg = f"Error starting Telegram bot: {str(e)}"
+            messagebox.showerror("Error", error_msg)
+    
+    def stop_telegram_bot(self):
+        try:
+            if self.telegram_bot:
+                self.telegram_bot.stop()
+                self.telegram_bot = None
+            
+            self.bot_running = False
+            self.telegram_bot_button.configure(text="Telegram Bot")
+            
+            # Показываем сообщение об успешной остановке
+            if self.is_translate:
+                messagebox.showinfo("Telegram Bot", "Telegram bot stopped successfully!")
+            else:
+                messagebox.showinfo("Telegram Bot", "Telegram бот успешно остановлен!")
+                
+        except Exception as e:
+            error_msg = f"Ошибка остановки Telegram бота: {str(e)}"
+            if self.is_translate:
+                error_msg = f"Error stopping Telegram bot: {str(e)}"
+            messagebox.showerror("Error", error_msg)
 
     def toggle_recognition(self):
         if self.is_listening:
@@ -1311,19 +1391,19 @@ class ChatApp(ctk.CTk):
         # Проверяем доступность микрофона
         mic_list = sr.Microphone.list_microphone_names()
         if not mic_list:
-            messagebox.showerror("Error", get_micro_error_message(self.isTranslate))
+            messagebox.showerror("Error", get_micro_error_message(self.is_translate))
             return
 
         with sr.Microphone() as source:
             self.input_entry.delete("1.0", tk.END)
-            self.input_entry.insert("1.0", get_talk_please(self.isTranslate))
+            self.input_entry.insert("1.0", get_talk_please(self.is_translate))
             isTextDelete = False
             while self.is_listening:
                 try:
                     # Слушаем звук
                     audio = recognizer.listen(source, timeout=3)  # Установите таймаут, чтобы избежать зависания
-                    # Определяем язык в зависимости от переменной isTranslate
-                    language = 'en-US' if self.isTranslate else 'ru-RU'
+                    # Определяем язык в зависимости от переменной is_translate
+                    language = 'en-US' if self.is_translate else 'ru-RU'
                     # Распознаем речь с помощью Google Web Speech API
                     text = recognizer.recognize_google(audio, language=language)
                     if not isTextDelete:
@@ -1355,12 +1435,55 @@ class ChatApp(ctk.CTk):
         try:
             # Проверяем наличие Tesseract в зависимости от платформы
             if platform.system() == "Windows":
-                tesseract_path = self.tesseract_cmd  # Используем путь из resource_path
+                # Проверяем несколько возможных путей для Windows
+                possible_paths = [
+                    self.tesseract_cmd,  # Путь из resource_path
+                    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+                    "tesseract.exe",  # В PATH
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), "tesseract.exe")  # В папке с программой
+                ]
+                
+                for path in possible_paths:
+                    if path and os.path.exists(path):
+                        tesseract_path = path
+                        break
+                    elif path == "tesseract.exe":
+                        # Проверяем, есть ли tesseract в PATH
+                        try:
+                            result = subprocess.run(["tesseract", "--version"], 
+                                                   capture_output=True, text=True, timeout=5)
+                            if result.returncode == 0:
+                                tesseract_path = "tesseract"
+                                break
+                        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+                            continue
             else:
-                tesseract_path = "/usr/bin/tesseract"  # Стандартный путь на Linux
+                # Для Linux/macOS проверяем стандартные пути
+                possible_paths = [
+                    "/usr/bin/tesseract",
+                    "/usr/local/bin/tesseract",
+                    "tesseract"  # В PATH
+                ]
+                
+                for path in possible_paths:
+                    if os.path.exists(path) or path == "tesseract":
+                        try:
+                            result = subprocess.run([path, "--version"], 
+                                                   capture_output=True, text=True, timeout=5)
+                            if result.returncode == 0:
+                                tesseract_path = path
+                                break
+                        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+                            continue
 
-            if not os.path.exists(tesseract_path):
-                messagebox.showerror("Error", "Tesseract не найден. Убедитесь, что он установлен.")
+            if not tesseract_path:
+                # Если Tesseract не найден, показываем сообщение с возможностью загрузки
+                if messagebox.askyesno(
+                    get_image_title_errors(self.is_translate),
+                    get_tesseract_not_found_messages(self.is_translate)
+                ):
+                    webbrowser.open("https://github.com/UB-Mannheim/tesseract/wiki")
                 return
 
             # Устанавливаем путь к Tesseract для pytesseract
@@ -1377,8 +1500,8 @@ class ChatApp(ctk.CTk):
                 image = cv2.imread(image_path)
                 if image is None:
                     messagebox.showerror(
-                        get_image_title_errors(main_app.isTranslate),
-                        get_image_load_error_message(main_app.isTranslate)
+                        get_image_title_errors(main_app.is_translate),
+                        get_image_load_error_message(main_app.is_translate)
                     )
                     return
                 code = self.read_qrcode_data(image_path)
@@ -1399,15 +1522,15 @@ class ChatApp(ctk.CTk):
                     self.input_entry.delete("1.0", tk.END)
                     self.input_entry.insert("1.0", recognized_text)
                 else:
-                    messagebox.showinfo("Result", get_no_text_recognized_message(main_app.isTranslate))
+                    messagebox.showinfo("Result", get_no_text_recognized_message(main_app.is_translate))
             else:
                 messagebox.showerror(
-                    get_image_title_errors(main_app.isTranslate),
-                    get_select_image_message_errors(main_app.isTranslate)
+                    get_image_title_errors(main_app.is_translate),
+                    get_select_image_message_errors(main_app.is_translate)
                 )
         except Exception as e:
             # Получаем информацию об ошибке
-            error_message = f"{get_text_recognition_error_message(main_app.isTranslate)}\n{str(e)}\n\n"
+            error_message = f"{get_text_recognition_error_message(main_app.is_translate)}\n{str(e)}\n\n"
             error_message += traceback.format_exc()
             messagebox.showerror("Error", error_message)
 
@@ -1448,7 +1571,7 @@ class ChatApp(ctk.CTk):
 
     def create_tray_icon(self):
         """Создает новый экземпляр иконки трея"""
-        if self.isTranslate:
+        if self.is_translate:
 
             menu = (
                 pystray.MenuItem("Открыть", self.show_window, default=True),
@@ -1493,6 +1616,9 @@ class ChatApp(ctk.CTk):
 
     def on_exit(self):
         """Полное закрытие приложения"""
+        # Останавливаем бота перед выходом
+        if self.bot_running and self.telegram_bot:
+            self.telegram_bot.stop()
         os._exit(0)
 
     def send_message(self, event=None):
@@ -1508,7 +1634,7 @@ class ChatApp(ctk.CTk):
                     response = model_functions[model](user_input)
                     if self.read_var.get():
                         self.speak(response)
-                    if not self.isTranslate:
+                    if not self.is_translate:
                         self.chat_history.insert(tk.END, f"Вы: {user_input}\n", "user_input")
                         self.chat_history.insert(tk.END, f"\nОтвет от {model}: {response}\n", "response")
                     else:
@@ -1701,7 +1827,7 @@ class ChatApp(ctk.CTk):
         current_theme = ctk.get_appearance_mode()
         if current_theme == "Dark":
             ctk.set_appearance_mode("light")
-            if not self.isTranslate:
+            if not self.is_translate:
                 self.theme_button.configure(text="Dark theme")
             else:
                 self.theme_button.configure(text="Тёмная тема")
@@ -1710,7 +1836,7 @@ class ChatApp(ctk.CTk):
             self.chat_history.tag_config("system_line", foreground="#000080")
         else:
             ctk.set_appearance_mode("dark")
-            if not self.isTranslate:
+            if not self.is_translate:
                 self.theme_button.configure(text="Light theme")
             else:
                 self.theme_button.configure(text="Светлая тема")
@@ -1719,7 +1845,7 @@ class ChatApp(ctk.CTk):
             self.chat_history.tag_config("system_line", foreground="cyan")
 
     def toggle_lang(self):
-        if self.isTranslate:  # Переключаем на английский
+        if self.is_translate:  # Переключаем на английский
             self.values = ["All", "Text", "Img", "Photo Analyze", "Web"]
             self.title("AI Chat")
             self.model_label.configure(text="Select model:")
@@ -1741,6 +1867,7 @@ class ChatApp(ctk.CTk):
             self.search_label.configure(text="Model Search:")
             self.speech_reco_button.configure(text="Voice input")
             self.read_checkbox.configure(text="Read text")
+            self.telegram_bot_button.configure(text="Telegram Bot")
         else:  # Переключаем на русский
             self.values = ["Все", "Текст", "Фото", "Анализ фото", "Поиск в Интернете"]
             self.title("Чат с ИИ")
@@ -1763,12 +1890,13 @@ class ChatApp(ctk.CTk):
             self.search_label.configure(text="Поиск модели:")
             self.speech_reco_button.configure(text="Голосовой ввод")
             self.read_checkbox.configure(text="Прочитать текст")
+            self.telegram_bot_button.configure(text="Telegram Bot")
         # Обновляем список значений в комбобоксе:
         self.category_combobox.configure(values=self.values)
         # Устанавливаем значение по умолчанию.
         self.category_combobox.set(self.values[0])
 
-        self.isTranslate = not self.isTranslate  # Переключаем состояние
+        self.is_translate = not self.is_translate  # Переключаем состояние
 
         if self.winfo_screenheight() < 900:
             self.create_menu()  # Пересоздаем меню после изменения языка
@@ -1830,7 +1958,7 @@ def read_chat():
     with open(html_path, "r", encoding="utf-8") as file:
         return HTMLResponse(content=file.read())
 
-main_app = ChatApp()
+main_app = None
 
 if __name__ == "__main__":
     # test_all_models_and_log()
@@ -1842,4 +1970,5 @@ if __name__ == "__main__":
     # Объединяем словари
     model_functions.update(chat_model_functions)
     model_functions.update(img_model_functions)
+    main_app = ChatApp()
     main_app.mainloop()

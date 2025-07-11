@@ -276,6 +276,14 @@
   {
    "optionDest": "datas",
    "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/tiktoken_ext;tiktoken_ext/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/.venv/Lib/site-packages/telegram;telegram/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "E:/Users/Igory/Desktop/AnsiUi2/tg_bot.py;."
   }
  ],
  "nonPyinstallerOptions": {
