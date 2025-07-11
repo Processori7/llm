@@ -38,7 +38,6 @@ from docx import Document
 from dotenv import load_dotenv
 from pyzbar.pyzbar import decode
 
-
 # Загружаем переменные из .env файла в окружение
 load_dotenv()
 
