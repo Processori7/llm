@@ -283,8 +283,8 @@ def get_Polinations_img_models_for_bot():
 
 #Получаю все текстовые модели Polinations
 def get_Polinations_chat_models():
-    new_models = {}  # Инициализация словаря
     try:
+        new_models = {}  # Инициализация словаря
         url = "https://text.pollinations.ai/models"
         resp = requests.get(url, timeout=10)
         if resp.ok:
@@ -422,7 +422,7 @@ def communicate_with_Venice(user_input, model):
 
 def communicate_with_Pollinations_chat(user_input, model):
     try:
-        url = f"https://text.pollinations.ai/'{user_input}'?model={model}"
+        url = f"https://text.pollinations.ai/'{user_input}'?model={model}&private=True"
         resp = requests.get(url, timeout=30)
 
         if resp.ok:
