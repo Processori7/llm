@@ -695,11 +695,12 @@ class TelegramBot:
         try:
             # Получаем информацию о боте
             bot_info = await self.application.bot.get_me()
-            startup_message = f"🚀 **{bot_info.first_name} бот запущен!**\n\n"
+            startup_message = f"🚀 **{bot_info.first_name} бот перезапущен!**\n\n"
             startup_message += "✨ Новый сеанс работы начат\n"
             startup_message += "🤖 Готов к работе с AI моделями\n\n"
-            startup_message += "Используйте /start для начала работы"
+            startup_message += "Используйте /start для начала работы или просто отправьте любое сообщение!"
             
+            sent_count = 0
             # Отправляем сообщение всем пользователям, которые ранее взаимодействовали с ботом
             for user_id in self.user_data.keys():
                 try:
@@ -708,10 +709,17 @@ class TelegramBot:
                         text=startup_message,
                         parse_mode="Markdown"
                     )
+                    sent_count += 1
+                    print(f"✅ Приветственное сообщение отправлено пользователю {user_id}")
                 except Exception as e:
                     print(f"⚠️ Не удалось отправить приветственное сообщение пользователю {user_id}: {e}")
             
-            print(f"📢 Приветственное сообщение отправлено {len(self.user_data)} пользователям")
+            print(f"📢 Приветственное сообщение отправлено {sent_count} из {len(self.user_data)} пользователям")
+            
+            # Если нет пользователей, выводим информацию
+            if len(self.user_data) == 0:
+                print("📝 Пока нет зарегистрированных пользователей. Приветственное сообщение будет отправлено после первого взаимодействия.")
+                
         except Exception as e:
             print(f"❌ Ошибка при отправке приветственного сообщения: {e}")
 
@@ -755,13 +763,16 @@ class TelegramBot:
         print("🛑 Останавливаю Telegram бота...")
         self.running = False
         
-        # Удаляем файл с данными пользователей
-        try:
-            if os.path.exists(self.user_data_file):
-                os.remove(self.user_data_file)
-                print(f"🗑️ Файл {self.user_data_file} удален")
-        except Exception as e:
-            print(f"⚠️ Ошибка при удалении файла {self.user_data_file}: {e}")
+        # Удаляем файлы при остановке
+        files_to_delete = [self.user_data_file, "server_log.txt"]
+        
+        for file_path in files_to_delete:
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"🗑️ Файл {file_path} удален")
+            except Exception as e:
+                print(f"⚠️ Ошибка при удалении файла {file_path}: {e}")
         
         # Принудительно завершаем поток
         if self.bot_thread and self.bot_thread.is_alive():
