@@ -1337,31 +1337,62 @@ class ChatApp(ctk.CTk):
 
     def start_api_mode(self):
         def run_fastapi_app():
-            # Отключаем логирование uvicorn для избежания ошибок
-            import logging
-            # Отключаем логи uvicorn
-            uvicorn_logger = logging.getLogger("uvicorn")
-            uvicorn_logger.setLevel(logging.ERROR)
-            uvicorn_access_logger = logging.getLogger("uvicorn.access")
-            uvicorn_access_logger.setLevel(logging.ERROR)
-            
-            # Определяем хост: если AUTO или None - используем автоопределение IP
-            if host_val is not None and host_val != "AUTO":
-                host_to_use = host_val
-            else:
-                host_to_use = self.local_ip
-            config = uvicorn.Config(app, host=host_to_use, port=port, log_level="error")
-            self.uvicorn_server = uvicorn.Server(config=config)
             try:
+                # Перенаправляем stdout и stderr в файл для отладки
+                log_file = open('server_log.txt', 'w', encoding='utf-8')
+                sys.stdout = log_file
+                sys.stderr = log_file
+                
+                # Определяем хост: если AUTO или None - используем автоопределение IP
+                if host_val is not None and host_val != "AUTO":
+                    host_to_use = host_val
+                else:
+                    host_to_use = self.local_ip
+                    
+                print(f"Starting server on {host_to_use}:{port}")
+                print(f"Server URL: http://{host_to_use}:{port}/chat")
+                print(f"Current working directory: {os.getcwd()}")
+                print(f"Python executable: {sys.executable}")
+                print(f"Available network interfaces:")
+                
+                # Показываем доступные сетевые интерфейсы
+                import socket
+                hostname = socket.gethostname()
+                print(f"Hostname: {hostname}")
+                try:
+                    all_ips = socket.getaddrinfo(hostname, None)
+                    for ip_info in all_ips:
+                        if ip_info[0] == socket.AF_INET:  # только IPv4
+                            print(f"IP: {ip_info[4][0]}")
+                except Exception as e:
+                    print(f"Error getting network info: {e}")
+                
+                config = uvicorn.Config(app, host=host_to_use, port=port, log_level="info")
+                self.uvicorn_server = uvicorn.Server(config=config)
                 self.uvicorn_server.run()
-            except Exception:
+            except Exception as e:
+                print(f"Server error: {str(e)}")
+                import traceback
+                print(f"Full traceback: {traceback.format_exc()}")
                 # Подавляем все ошибки при остановке сервера
                 pass
+            finally:
+                # Закрываем файл лога если он был открыт
+                try:
+                    if 'log_file' in locals() and not log_file.closed:
+                        log_file.close()
+                except:
+                    pass
 
+        # Определяем порт
         port = 8000
-
         if port_val is not None:
-            port = port_val
+            try:
+                port = int(port_val)
+                print(f"Using port from config: {port}")
+            except (ValueError, TypeError):
+                port = 8000
+                print(f"Failed to parse port, using default: {port}")
 
         self.server_process = threading.Thread(target=run_fastapi_app, daemon=True)
         self.server_process.start()
