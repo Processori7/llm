@@ -12,6 +12,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRussian = true;
     let allModels = []; // Хранение всех моделей
 
+    // Загружаем сохраненную историю чата при загрузке страницы
+    function loadChatHistory() {
+        const savedHistory = localStorage.getItem('chatHistory');
+        if (savedHistory) {
+            try {
+                chatHistory = JSON.parse(savedHistory);
+                // Восстанавливаем сообщения в чате
+                chatHistory.forEach(msg => {
+                    appendMessage(msg.sender, msg.message);
+                });
+            } catch (error) {
+                console.error('Ошибка при загрузке истории чата:', error);
+                chatHistory = [];
+            }
+        }
+    }
+
+    // Сохраняем историю чата в localStorage
+    function saveChatHistory() {
+        try {
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        } catch (error) {
+            console.error('Ошибка при сохранении истории чата:', error);
+        }
+    }
+
+    // Загружаем сохраненную историю чата
+    loadChatHistory();
+
     // Загрузка моделей
     fetch('/api/ai/models')
         .then(response => response.json())
@@ -53,9 +82,29 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessage() {
         const message = userInput.value.trim();
         if (message === '') return;
+        
+        // Добавляем сообщение пользователя
         chatHistory.push({ sender: 'user', message: message });
         appendMessage('user', message);
+        saveChatHistory(); // Сохраняем историю
+        
+        // Очищаем поле ввода сразу
+        userInput.value = '';
+        
+        // Показываем сообщение "Думаю..." 
+        const thinkingText = isRussian ? 'Думаю...' : 'Thinking...';
+        const thinkingElement = document.createElement('div');
+        thinkingElement.classList.add('message', 'bot', 'thinking');
+        thinkingElement.id = 'thinking-message'; // Добавляем ID для легкого поиска
+        thinkingElement.textContent = `${isRussian ? 'Бот:' : 'Bot:'} ${thinkingText}`;
+        
+        // Добавляем элемент в чат
+        chatBox.appendChild(thinkingElement);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
         const selectedModel = modelSelect.value;
+        
+        // Отправляем запрос к API
         fetch('/api/gpt/ans', {
             method: 'POST',
             headers: {
@@ -65,15 +114,35 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
-            chatHistory.push({ sender: 'bot', message: data.response });
-            appendMessage('bot', data.response);
+            
+            // Минимальная задержка, чтобы пользователь увидел сообщение "Думаю..."
+            setTimeout(() => {
+                // Удаляем сообщение "Думаю..."
+                const thinkingMsg = document.getElementById('thinking-message');
+                if (thinkingMsg) {
+                    thinkingMsg.remove();
+                }
+                
+                // Добавляем ответ бота
+                chatHistory.push({ sender: 'bot', message: data.response });
+                appendMessage('bot', data.response);
+                saveChatHistory(); // Сохраняем историю
+            }, 500); // Задержка 0.5 секунды
         })
         .catch(error => {
-            chatHistory.push({ sender: 'bot', message: 'Произошла ошибка при получении ответа.' });
-            appendMessage('bot', 'Произошла ошибка при получении ответа.');
+            // Удаляем сообщение "Думаю..." при ошибке
+            const thinkingMsg = document.getElementById('thinking-message');
+            if (thinkingMsg) {
+                thinkingMsg.remove();
+            }
+            
+            // Показываем сообщение об ошибке
+            const errorMessage = isRussian ? 'Произошла ошибка при получении ответа.' : 'An error occurred while getting the response.';
+            chatHistory.push({ sender: 'bot', message: errorMessage });
+            appendMessage('bot', errorMessage);
+            saveChatHistory(); // Сохраняем историю
             console.error('Ошибка при отправке сообщения:', error);
         });
-        userInput.value = '';
     }
 
     // Сохранение чата
@@ -94,6 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
     clearChatButton.addEventListener('click', () => {
         chatBox.innerHTML = '';
         chatHistory = [];
+        // Очищаем сохраненную историю
+        localStorage.removeItem('chatHistory');
     });
 
     // Открытие Swagger UI

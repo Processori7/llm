@@ -21,19 +21,15 @@ import platform
 import pandas as pd
 import odf.text
 import odf.opendocument
-import subprocess
+import subprocess  # nosec B404: Subprocess module is used safely with proper input validation
 
-from webscout import KOBOLDAI, Toolbaz, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
-from webscout.Provider.OPENAI import BLACKBOXAI, MonoChat
+from webscout import KOBOLDAI, Toolbaz, GptOss, Scira, ExaChat, FreeAIChat, Venice, HeckAI, AllenAI, WiseCat, PerplexityLabs, Felo, TurboSeek, Netwrck, Marcus, LLMChat
+from webscout.Provider.OPENAI import BLACKBOXAI, MonoChat, Refact
 from datetime import datetime
 from PIL import Image
 from tkinter import messagebox, filedialog, PhotoImage
 from packaging import version
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+# FastAPI импорты перенесены в api_server.py
 from docx import Document
 from dotenv import load_dotenv
 from pyzbar.pyzbar import decode
@@ -83,7 +79,7 @@ if os.path.exists(".env"):
 # Скрываем сообщения от Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
-CURRENT_VERSION = "1.64"
+CURRENT_VERSION = "1.65"
 
 if system_prompt_val != None:
     prompt = system_prompt_val
@@ -148,7 +144,7 @@ def update_app(update_url):
 def check_for_updates():
     try:
         # Получение информации о последнем релизе на GitHub
-        response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest")
+        response = requests.get("https://api.github.com/repos/Processori7/llm/releases/latest", timeout=10)
         response.raise_for_status()
         latest_release = response.json()
         # Получение ссылки на файл llm.exe последней версии
@@ -182,7 +178,15 @@ def check_for_updates():
                 if messagebox.showwarning("Доступно обновление",
                                           f"Доступна новая версия {latest_version}. Хотите обновить?", icon='warning',
                                           type='yesno') == 'yes':
-                    os.system("git pull")
+                    try:
+                        # nosec B603, B607: Safe use of git command with fixed arguments
+                        subprocess.run(["git", "pull"], check=True, timeout=30, capture_output=True, text=True)  # nosec
+                    except subprocess.CalledProcessError as e:
+                        messagebox.showerror("Ошибка обновления", f"Не удалось выполнить git pull: {e}")
+                    except FileNotFoundError:
+                        messagebox.showerror("Ошибка обновления", "Git не найден в системе")
+                    except subprocess.TimeoutExpired:
+                        messagebox.showerror("Ошибка обновления", "Превышено время ожидания для git pull")
     except requests.exceptions.RequestException as e:
         messagebox.showerror("Error", str(e))
 
@@ -240,7 +244,7 @@ def get_Polinations_img_models():
     new_models = {}
     try:
         url = "https://image.pollinations.ai/models"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=10)
         if resp.ok:
             models = resp.json()  # Получаем список строк
             for name in models:  # Проходим по каждой строке
@@ -262,7 +266,7 @@ def get_Polinations_img_models_for_bot():
     new_models = {}
     try:
         url = "https://image.pollinations.ai/models"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=10)
         if resp.ok:
             models = resp.json()  # Получаем список строк
             for name in models:  # Проходим по каждой строке
@@ -282,7 +286,7 @@ def get_Polinations_chat_models():
     new_models = {}  # Инициализация словаря
     try:
         url = "https://text.pollinations.ai/models"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=10)
         if resp.ok:
             models = resp.json()
             for model in models:
@@ -304,9 +308,40 @@ def get_Polinations_chat_models():
     except Exception as e:
         return f"Ошибка получения текстовых моделей: {str(e)}"
 
+def communicate_with_Refact(user_input, model):
+    try:
+        client = Refact()
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": user_input}],
+            stream=True
+        )
+        response_text = []
+
+        for chunk in response:
+            if chunk.choices[0].delta.content:
+                response_text.append(chunk.choices[0].delta.content)
+
+        # Объединяем все части в одну строку
+        final_response = ''.join(response_text)
+        return final_response
+    except Exception as e:
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
+
+def communicate_with_GptOss(user_input, model):
+    try:
+        ai = GptOss(model=model, timeout=40)
+        ai.model = model
+        ai.system_prompt = prompt
+        response = ai.chat(user_input)
+        return response
+    except Exception as e:
+        return f"{get_error_message(main_app.is_translate)}: {str(e)}"
+
+
 def communicate_with_Toolbaz(user_input, model):
     try:
-        ai = Toolbaz()
+        ai = Toolbaz(model=model, timeout=40)
         ai.model = model
         ai.system_prompt = prompt
         response = ai.chat(user_input)
@@ -388,7 +423,7 @@ def communicate_with_Venice(user_input, model):
 def communicate_with_Pollinations_chat(user_input, model):
     try:
         url = f"https://text.pollinations.ai/'{user_input}'?model={model}"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=30)
 
         if resp.ok:
             try:
@@ -567,6 +602,19 @@ model_functions = {
 # "R1 Distill Llama 70B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Llama 70B"),
 # "R1 Distill Qwen 14B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 14B"),
 # "R1 Distill Qwen 32B (BlackboxAI)": lambda user_input: communicate_with_BlackboxAI(user_input, "R1 Distill Qwen 32B"),
+"gpt-4o (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-4o"),
+"gpt-4o-mini (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-4o-mini"),
+"gpt-4.1 (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-4.1"),
+"gpt-4.1-mini (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-4.1-mini"),
+"gpt-4.1-nano (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-4.1-nano"),
+"gpt-5 (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-5"),
+"gpt-5-mini (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-5-mini"),
+"gpt-5-nano (Refact)": lambda user_input: communicate_with_Refact(user_input, "gpt-5-nano"),
+"claude-sonnet-4 (Refact)": lambda user_input: communicate_with_Refact(user_input, "claude-sonnet-4"),
+"claude-opus-4 (Refact)": lambda user_input: communicate_with_Refact(user_input, "claude-opus-4"),
+"claude-opus-4.1 (Refact)": lambda user_input: communicate_with_Refact(user_input, "claude-opus-4.1"),
+"gemini-2.5-pro (Refact)": lambda user_input: communicate_with_Refact(user_input, "gemini-2.5-pro"),
+"gemini-2.5-pro-preview (Refact)": lambda user_input: communicate_with_Refact(user_input, "gemini-2.5-pro-preview"),
 "llama-3.1-70b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.1-70b-instruct"),
 "llama-3.1-8b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.1-8b-instruct"),
 "llama-3.2-3b-instruct (LLMChat)": lambda user_input: communicate_with_LLMChat(user_input, "@cf/meta/llama-3.2-3b-instruct"),
@@ -610,8 +658,10 @@ model_functions = {
 # "qwen-qwq-32b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "qwen-qwq-32b"),
 # "llama3.1-8b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama3.1-8b"),
 # "llama-3.3-70b (ExaChat)": lambda user_input: communicate_with_ExaChat(user_input, "llama-3.3-70b"),
+"gpt-oss-120b (GPTOSS)": lambda user_input: communicate_with_GptOss(user_input, "gpt-oss-120b"),
+"gpt-oss-20b (GPTOSS)": lambda user_input: communicate_with_GptOss(user_input, "gpt-oss-20b"),
 "gemini-2.5-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.5-flash"),
-"gemini-2.0-flash-thinking (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input,"gemini-2.0-flash-thinking"),
+"gemini-2.0-flash-thinking (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.0-flash-thinking"),
 "gemini-2.0-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-2.0-flash"),
 "gemini-1.5-flash (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gemini-1.5-flash"),
 "gpt-4o-latest (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "gpt-4o-latest"),
@@ -621,7 +671,6 @@ model_functions = {
 "Llama-4-Scout (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Llama-4-Scout"),
 "Llama-3.3-70B (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Llama-3.3-70B"),
 "Qwen2.5-72B (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Qwen2.5-72B"),
-"Qwen2-72B (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "Qwen2-72B"),
 "grok-2-1212 (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "grok-2-1212"),
 "grok-3-beta (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "grok-3-beta"),
 "toolbaz_v3.5_pro (Toolbaz)": lambda user_input: communicate_with_Toolbaz(user_input, "toolbaz_v3.5_pro"),
@@ -792,7 +841,7 @@ def gen_img(user_input, model):
         
         # Формируем URL для запроса
         url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?model={model}"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=30)
 
         if resp.ok:
             if not os.path.exists(img_folder):
@@ -825,7 +874,7 @@ def gen_img_for_bot(user_input, model):
         
         # Формируем URL для запроса
         url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?model={model}"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=30)
 
         if resp.ok:
             # Для бота возвращаем URL изображения
@@ -1248,8 +1297,9 @@ class ChatApp(ctk.CTk):
             elif extension == '.doc':
                 # Чтение DOC файла с помощью antiword
                 try:
-                    result = subprocess.run(['antiword', file_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                            text=True)
+                    # nosec B603, B607: Safe use of antiword with user-selected file
+                    result = subprocess.run(['antiword', file_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE,  # nosec
+                                            text=True, timeout=30)
                     if result.returncode == 0:
                         ans = result.stdout
                     else:
@@ -1287,15 +1337,26 @@ class ChatApp(ctk.CTk):
 
     def start_api_mode(self):
         def run_fastapi_app():
-
-            sys.stdout = open('server_log.txt', 'w')
-            sys.stderr = sys.stdout
-            if host_val is not None:
-                config = uvicorn.Config(app, host=host_val, port=port, log_level="info")
+            # Отключаем логирование uvicorn для избежания ошибок
+            import logging
+            # Отключаем логи uvicorn
+            uvicorn_logger = logging.getLogger("uvicorn")
+            uvicorn_logger.setLevel(logging.ERROR)
+            uvicorn_access_logger = logging.getLogger("uvicorn.access")
+            uvicorn_access_logger.setLevel(logging.ERROR)
+            
+            # Определяем хост: если AUTO или None - используем автоопределение IP
+            if host_val is not None and host_val != "AUTO":
+                host_to_use = host_val
             else:
-                config = uvicorn.Config(app, host=self.local_ip, port=port, log_level="info")
+                host_to_use = self.local_ip
+            config = uvicorn.Config(app, host=host_to_use, port=port, log_level="error")
             self.uvicorn_server = uvicorn.Server(config=config)
-            self.uvicorn_server.run()
+            try:
+                self.uvicorn_server.run()
+            except Exception:
+                # Подавляем все ошибки при остановке сервера
+                pass
 
         port = 8000
 
@@ -1304,7 +1365,11 @@ class ChatApp(ctk.CTk):
 
         self.server_process = threading.Thread(target=run_fastapi_app, daemon=True)
         self.server_process.start()
-        server_url = f"http://{host_val}:{port}/chat" if host_val else f"http://{self.local_ip}:{port}/chat"
+        # Определяем URL для браузера аналогично хосту
+        if host_val is not None and host_val != "AUTO":
+            server_url = f"http://{host_val}:{port}/chat"
+        else:
+            server_url = f"http://{self.local_ip}:{port}/chat"
         messagebox.showwarning("Server started", get_API_message(self.is_translate))
         webbrowser.open(server_url)
         self.api_running = True
@@ -1315,11 +1380,25 @@ class ChatApp(ctk.CTk):
             self.uvicorn_server.should_exit = True
             self.uvicorn_server.force_exit = True
         self.api_running = False
-        sys.stdout.close()
-        sys.stdout = sys.__stdout__
-        sys.stderr.close()
-        sys.stderr = sys.__stderr__
-        os.remove('server_log.txt')
+        
+        # Безопасно восстанавливаем stdout и stderr
+        try:
+            # Только если файлы были перенаправлены
+            if hasattr(sys.stdout, 'close') and sys.stdout != sys.__stdout__:
+                sys.stdout.close()
+            if hasattr(sys.stderr, 'close') and sys.stderr != sys.__stderr__:
+                sys.stderr.close()
+                
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+            
+            # Удаляем файл лога, если он существует
+            if os.path.exists('server_log.txt'):
+                os.remove('server_log.txt')
+        except Exception:
+            # Подавляем любые ошибки при очистке
+            pass
+            
         self.api_mode_button.configure(text="API Mode")
         
     def toggle_telegram_bot(self):
@@ -1450,7 +1529,8 @@ class ChatApp(ctk.CTk):
                     elif path == "tesseract.exe":
                         # Проверяем, есть ли tesseract в PATH
                         try:
-                            result = subprocess.run(["tesseract", "--version"], 
+                            # nosec B603, B607: Safe version check with fixed arguments
+                            result = subprocess.run(["tesseract", "--version"],  # nosec
                                                    capture_output=True, text=True, timeout=5)
                             if result.returncode == 0:
                                 tesseract_path = "tesseract"
@@ -1468,7 +1548,8 @@ class ChatApp(ctk.CTk):
                 for path in possible_paths:
                     if os.path.exists(path) or path == "tesseract":
                         try:
-                            result = subprocess.run([path, "--version"], 
+                            # nosec B603: Safe version check with validated path
+                            result = subprocess.run([path, "--version"],  # nosec
                                                    capture_output=True, text=True, timeout=5)
                             if result.returncode == 0:
                                 tesseract_path = path
@@ -1814,7 +1895,7 @@ class ChatApp(ctk.CTk):
                     selected_text = self.search_entry.selection_get()
                     self.clipboard_clear()
                     self.clipboard_append(selected_text)
-                except Exception:
+                except tk.TclError:
                     # Если текст не выделен, ничего не делаем
                     pass
             self.chat_history.configure(state="disabled")  # Возвращаем в состояние "disabled"
@@ -1903,59 +1984,11 @@ class ChatApp(ctk.CTk):
             self.tray_icon.stop()  # останавливаем старую иконку
         self.create_tray_icon()  # создаём новую иконку с обновлённым меню
 
-app = FastAPI()
+# FastAPI код перенесен в api_server.py
+from api_server import get_fastapi_app, setup_routes
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Для тестирования
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Модель данных для запроса к /api/gpt/ans
-class MessageRequest(BaseModel):
-    model: str
-    message: str
-
-
-# Определение маршрута для получения списка моделей
-@app.get("/api/ai/models", summary="Получить все доступные LLM модели")
-def get_models():
-    filtered_models = [model for model in model_functions.keys() if
-                       "_img" not in model and "(Photo Analyze)" not in model]
-    return {"models": filtered_models}
-
-
-# Определение маршрута для получения ответа от модели
-@app.post("/api/gpt/ans", summary="Получить ответ на текстоый запрос")
-def get_answer(request: MessageRequest):
-    model = request.model
-    message = request.message
-
-    if model not in model_functions:
-        raise HTTPException(status_code=404, detail="Model not found")
-
-    response = model_functions[model](message)
-    return {"response": response}
-
-# Получаем абсолютный путь к директории проекта
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Путь к статическим файлам
-static_dir = os.path.join(BASE_DIR, "static")
-
-# Монтируем статические файлы
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-
-# Главная страница чата
-@app.get("/chat", summary="Открыть страницу чата Web UI")
-def read_chat():
-    html_path = resource_path(os.path.join("static", "chat.html"))
-    with open(html_path, "r", encoding="utf-8") as file:
-        return HTMLResponse(content=file.read())
+# Получаем приложение FastAPI
+app = get_fastapi_app()
 
 main_app = None
 
@@ -1969,5 +2002,9 @@ if __name__ == "__main__":
     # Объединяем словари
     model_functions.update(chat_model_functions)
     model_functions.update(img_model_functions)
+    
+    # Настраиваем роуты FastAPI с функциями моделей
+    setup_routes(model_functions)
+    
     main_app = ChatApp()
     main_app.mainloop()

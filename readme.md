@@ -1,3 +1,4 @@
+[![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 # Описание
 Это приложение, которое позволяет использовать бесплатные модели ИИ из пакета Webscout.  
 # Возможности  
@@ -152,15 +153,55 @@ In your virtual environment, find the PyGetWindow folder and copy the new files 
 After that, try launching your application again.  
 The code was tested on the latest version of Lubuntu with the latest versions of the Tkinter and CustomTkinter packages. In theory, the code can be run on other OCS with X-lib support.  
 ## Example .env file/ Пример файла .env  
+```env
 FONT_SIZE=15  
-HOST=127.0.0.1  
+HOST=AUTO  
 PORT=8000  
-MODEL=2  
+MODEL=0  
 IS_TRANSLATE=False  
-IMG_FOLDER=My_img  
-WRITE_HISTORY=True  
-MODE=light  
-DEFAULT_COLOR_THEM=green
-SYSTEM_PROMPT = "Your prompt here"  
+IMG_FOLDER=img  
+WRITE_HISTORY=False  
+MODE=dark  
+DEFAULT_COLOR_THEM=green  
+SYSTEM_PROMPT="Your custom system prompt here"  
 FREEAICHAT_API_KEY=get_your_key_here:https://freeaichatplayground.com/profile  
-TELEGRAM_BOT_TOKEN=https://t.me/BotFather
+TELEGRAM_BOT_TOKEN=get_your_token_here:https://t.me/BotFather  
+```
+
+## Описание настроек .env файла / .env file settings description
+
+**FONT_SIZE** - размер шрифта интерфейса / interface font size (по умолчанию/default: 15)
+
+**HOST** - IP-адрес для API сервера / IP address for API server:  
+- `AUTO` - автоматическое определение локального IP (рекомендуется) / automatic local IP detection (recommended)  
+- `127.0.0.1` - только локальный доступ / localhost only  
+- Любой другой IP-адрес / any other IP address  
+
+**PORT** - порт для API сервера / port for API server (по умолчанию/default: 8000)
+
+**MODEL** - индекс модели по умолчанию / default model index (0 = первая модель/first model)
+
+**IS_TRANSLATE** - язык интерфейса / interface language:  
+- `False` - русский / Russian  
+- `True` - английский / English  
+
+**IMG_FOLDER** - папка для сохранения изображений / folder for saving images (по умолчанию/default: img)
+
+**WRITE_HISTORY** - сохранение истории чата / save chat history:  
+- `False` - не сохранять / don't save  
+- `True` - сохранять в файл llm_history.txt / save to llm_history.txt  
+
+**MODE** - тема оформления / theme:  
+- `dark` - тёмная тема / dark theme  
+- `light` - светлая тема / light theme  
+
+**DEFAULT_COLOR_THEM** - цветовая схема / color scheme:  
+- `green`, `blue`, `dark-blue` и другие / and others
+
+**SYSTEM_PROMPT** - системный промпт для LLM моделей / system prompt for LLM models
+
+**FREEAICHAT_API_KEY** - API ключ для FreeAIChat моделей / API key for FreeAIChat models  
+Получить можно здесь / Get it here: https://freeaichatplayground.com/profile
+
+**TELEGRAM_BOT_TOKEN** - токен Telegram бота / Telegram bot token  
+Получить можно здесь / Get it here: https://t.me/BotFather
