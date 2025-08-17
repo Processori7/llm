@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 import threading
 import asyncio
@@ -29,9 +30,13 @@ class TelegramBot:
             raise ValueError("Токен TELEGRAM_BOT_TOKEN не найден в .env")
 
         self.user_data = {}  # Хранение данных пользователя (модель, язык, поиск)
+        self.user_data_file = "telegram_users.json"  # Файл для сохранения данных пользователей
         self.application = None
         self.running = False
         self.bot_thread = None
+        
+        # Загружаем данные пользователей при инициализации
+        self.load_user_data()
         
         # Локализация
         self.texts = {
@@ -137,6 +142,33 @@ class TelegramBot:
                 results.append(model_name)
         
         return results
+
+    def load_user_data(self):
+        """Загружает данные пользователей из файла"""
+        try:
+            if os.path.exists(self.user_data_file):
+                with open(self.user_data_file, 'r', encoding='utf-8') as f:
+                    # Загружаем данные и конвертируем строковые ключи обратно в int
+                    data = json.load(f)
+                    self.user_data = {int(k): v for k, v in data.items()}
+                    print(f"📚 Загружены данные {len(self.user_data)} пользователей из {self.user_data_file}")
+            else:
+                print(f"📝 Файл {self.user_data_file} не найден, создается новая база пользователей")
+                self.user_data = {}
+        except Exception as e:
+            print(f"⚠️ Ошибка загрузки данных пользователей: {e}")
+            self.user_data = {}
+    
+    def save_user_data(self):
+        """Сохраняет данные пользователей в файл"""
+        try:
+            # Конвертируем int ключи в строки для JSON
+            data_to_save = {str(k): v for k, v in self.user_data.items()}
+            with open(self.user_data_file, 'w', encoding='utf-8') as f:
+                json.dump(data_to_save, f, ensure_ascii=False, indent=2)
+            print(f"💾 Данные {len(self.user_data)} пользователей сохранены в {self.user_data_file}")
+        except Exception as e:
+            print(f"⚠️ Ошибка сохранения данных пользователей: {e}")
 
     def filter_models(self, category="all"):
         """Фильтрация моделей по категориям"""
@@ -317,6 +349,8 @@ class TelegramBot:
         # Инициализируем данные пользователя, если их нет
         if user_id not in self.user_data:
             self.user_data[user_id] = {"language": "ru"}
+            # Сохраняем данные после добавления нового пользователя
+            self.save_user_data()
         
         keyboard = self.get_main_menu_keyboard(user_id)
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -372,6 +406,8 @@ class TelegramBot:
             current_lang = self.get_user_language(user_id)
             new_lang = "en" if current_lang == "ru" else "ru"
             self.user_data[user_id]["language"] = new_lang
+            # Сохраняем изменения
+            self.save_user_data()
             
             # Показываем сообщение о смене языка
             keyboard = self.get_main_menu_keyboard(user_id)
@@ -428,6 +464,8 @@ class TelegramBot:
                 if user_id not in self.user_data:
                     self.user_data[user_id] = {"language": "ru"}
                 self.user_data[user_id]["model"] = model_name
+                # Сохраняем изменения
+                self.save_user_data()
                 
                 # Определяем тип модели
                 model_type = self.get_text(user_id, "type_text")
@@ -553,7 +591,11 @@ class TelegramBot:
         selected_model = self.user_data.get(user_id, {}).get("model")
         if not selected_model:
             selected_model = next(iter(self.model_functions))
-            self.user_data[user_id] = {"model": selected_model}
+            if user_id not in self.user_data:
+                self.user_data[user_id] = {"language": "ru"}
+            self.user_data[user_id]["model"] = selected_model
+            # Сохраняем изменения
+            self.save_user_data()
 
         try:
             # Добавляем кнопки меню к каждому ответу
@@ -648,6 +690,31 @@ class TelegramBot:
 
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
+    async def send_startup_greeting(self):
+        """Отправляет приветственное сообщение всем пользователям при запуске бота"""
+        try:
+            # Получаем информацию о боте
+            bot_info = await self.application.bot.get_me()
+            startup_message = f"🚀 **{bot_info.first_name} бот запущен!**\n\n"
+            startup_message += "✨ Новый сеанс работы начат\n"
+            startup_message += "🤖 Готов к работе с AI моделями\n\n"
+            startup_message += "Используйте /start для начала работы"
+            
+            # Отправляем сообщение всем пользователям, которые ранее взаимодействовали с ботом
+            for user_id in self.user_data.keys():
+                try:
+                    await self.application.bot.send_message(
+                        chat_id=user_id, 
+                        text=startup_message,
+                        parse_mode="Markdown"
+                    )
+                except Exception as e:
+                    print(f"⚠️ Не удалось отправить приветственное сообщение пользователю {user_id}: {e}")
+            
+            print(f"📢 Приветственное сообщение отправлено {len(self.user_data)} пользователям")
+        except Exception as e:
+            print(f"❌ Ошибка при отправке приветственного сообщения: {e}")
+
     def run(self):
         if not self.bot_token:
             print("❌ Telegram бот не запущен: отсутствует TELEGRAM_BOT_TOKEN в .env")
@@ -662,6 +729,12 @@ class TelegramBot:
         self.application = ApplicationBuilder().token(self.bot_token).build()
         self.setup_handlers()
         self.running = True
+        
+        # Планируем отправку приветственного сообщения после запуска
+        async def post_init(application):
+            await self.send_startup_greeting()
+        
+        self.application.post_init = post_init
         
         try:
             self.application.run_polling()
@@ -681,6 +754,14 @@ class TelegramBot:
             return
         print("🛑 Останавливаю Telegram бота...")
         self.running = False
+        
+        # Удаляем файл с данными пользователей
+        try:
+            if os.path.exists(self.user_data_file):
+                os.remove(self.user_data_file)
+                print(f"🗑️ Файл {self.user_data_file} удален")
+        except Exception as e:
+            print(f"⚠️ Ошибка при удалении файла {self.user_data_file}: {e}")
         
         # Принудительно завершаем поток
         if self.bot_thread and self.bot_thread.is_alive():
